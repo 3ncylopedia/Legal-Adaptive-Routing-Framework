@@ -15,9 +15,15 @@ graph TD
     Triage --> |Normalize & Detect| Normalized[Normalized English Text]
     Normalized --> Router[Semantic Router]
     Router --> |Classify| RouteDecision{Route Decision}
-    RouteDecision -->|General Info| Pathway1[General Legal LLM]
+    
+    RouteDecision -->|General or Reasoning| RAG[Legal Retrieval Module]
     RouteDecision -->|Ambiguous| Pathway2[Manual Review/Clarification]
-    RouteDecision -->|Legal Reasoning| Pathway3[Reasoning LLM]
+    
+    RAG --> |HK & PH FAISS Indices| Context[Augmented Query + Context]
+    
+    Context -->|Route: General Info| Pathway1[General Legal LLM]
+    Context -->|Route: Legal Reasoning| Pathway3[Reasoning LLM]
+    
     Pathway1 --> Response
     Pathway2 --> Response
     Pathway3 --> Response

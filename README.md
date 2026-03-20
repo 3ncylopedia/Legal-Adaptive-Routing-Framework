@@ -17,9 +17,9 @@ The **Legal Adaptive Routing Framework (LARF)** is a specialized Python framewor
 It uses a multi-stage **Agentic Pipeline** to:
 1.  **Normalize**: Translate linguistic variations (Taglish/Tagalog) into standard legal English.
 2.  **Classify**: Intelligently route queries to the correct domain (General Info vs. Complex Reasoning).
-3.  **Identify**: Advance RAG search mechanism focused on the Philippine and HongKong Jurisdiction Legal Statutes.
+3.  **Retrieve**: Advanced RAG search mechanism focused on semantic querying of specific jurisdictional indices (e.g., Philippine and Hong Kong Legal Statutes).
 4.  **Generate**: Produce legally grounded responses using specialized LLMs.
-3.  **Audit**: Audit Generated Output for safety and reduce hallucinations.
+5.  **Audit**: Audit Generated Output for safety and reduce hallucinations.
 
 ---
 
@@ -42,6 +42,10 @@ LegalAdaptiveRoutingFramework/
 │           ├── semantic_router/        # Routing Components
 │           │   ├── legal_generation.py
 │           │   └── logic_classifier.py
+│           ├── legal_retrieval/        # RAG Components
+│           │   ├── embedding.py
+│           │   └── retriever.py
+│           ├── retrieval.py    # Legal Retrieval Facade
 │           ├── router.py       # Router Facade
 │           └── triage.py       # Triage Facade
 ├── tests/                      # Unit Tests
@@ -86,6 +90,12 @@ Run the main driver script to see the pipeline in action:
 
 ```bash
 python main.py
+```
+
+To explore different RAG pipelines (from basic retrieval to full multi-index routing), run the included examples:
+
+```bash
+python use-cases.py
 ```
 
 Or import the modules into your own application:
