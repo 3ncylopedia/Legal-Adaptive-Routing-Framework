@@ -139,13 +139,31 @@ class EmbeddingManager:
         @desc_ Chunks each document, generates embeddings, and adds them to the FAISS index.
         """
         all_chunks = []
+        chunk_metadatas = []
         for doc in documents:
-            all_chunks.extend(self._chunk_text_(doc))
+            if isinstance(doc, dict):
+                text = doc.get("content", "")
+                meta = doc.get("metadata", {})
+            else:
+                text = doc
+                meta = {}
+                
+            chunks = self._chunk_text_(text)
+            all_chunks.extend(chunks)
+            chunk_metadatas.extend([meta] * len(chunks))
 
         if not all_chunks:
             raise InvalidInputError("No chunks generated from provided documents.")
 
-        embeddings = self._get_embeddings_(all_chunks)
+        # Batch requests to support large corpora and avoid API limits
+        batch_size = 100
+        all_embeddings = []
+        for i in range(0, len(all_chunks), batch_size):
+            batch = all_chunks[i:i + batch_size]
+            batch_emb = self._get_embeddings_(batch)
+            all_embeddings.append(batch_emb)
+            
+        embeddings = np.vstack(all_embeddings)
 
         ## @logic_ Initialize FAISS index on first call using embedding dimension
         if self._index is None:
@@ -153,7 +171,7 @@ class EmbeddingManager:
             self._index = faiss.IndexFlatL2(self._dimension)
 
         self._index.add(embeddings)
-        self._chunks.extend(all_chunks)
+        self._chunks.extend([{"text": c, "metadata": m} for c, m in zip(all_chunks, chunk_metadatas)])
 
     def _search_(self, query: str, top_k: int = None) -> list:
         """
@@ -176,10 +194,19 @@ class EmbeddingManager:
         results = []
         for i, idx in enumerate(indices[0]):
             if idx < len(self._chunks):
-                results.append({
-                    "chunk": self._chunks[idx],
-                    "score": float(distances[0][i])
-                })
+                chunk_data = self._chunks[idx]
+                if isinstance(chunk_data, dict):
+                    results.append({
+                        "chunk": chunk_data["text"],
+                        "metadata": chunk_data["metadata"],
+                        "score": float(distances[0][i])
+                    })
+                else:
+                    results.append({
+                        "chunk": chunk_data,
+                        "metadata": {},
+                        "score": float(distances[0][i])
+                    })
 
         return results
 

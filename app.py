@@ -4,7 +4,7 @@ import time
 import uuid
 from flask import Flask, render_template, request, Response, stream_with_context
 from dotenv import load_dotenv
-from src.adaptive_routing import FrameworkConfig, TriageModule, SemanticRouterModule
+from src.adaptive_routing import FrameworkConfig, TriageModule, SemanticRouterModule, LegalRetrievalModule
 load_dotenv()
 
 
@@ -17,43 +17,64 @@ FrameworkConfig._update_settings_(
         api_key=os.getenv("OPENROUTER_API_KEY", ""),
 
         #--- Triage Module (Normalization) ---
-        triage_model="qwen/qwen3-4b:free",
+        triage_model="z-ai/glm-4.5-air:free",
         triage_temp=0.4,
         triage_max_tokens=1500,
         triage_use_system=True,
         triage_reasoning=False,
 
         # --- Semantic Router (Classification) ---
-        router_model="qwen/qwen3-4b:free",
+        router_model="z-ai/glm-4.5-air:free",
         router_temp=0.0,
         router_max_tokens=1000,
         router_use_system=True,
         router_reasoning=False,
 
         # --- Legal Generator: General Information ---
-        general_model="qwen/qwen3-4b:free",
+        general_model="z-ai/glm-4.5-air:free",
         general_temp=0.6,
         general_max_tokens=1000,
         general_use_system=True,
         general_reasoning=False,
 
         # --- Legal Generator: Reasoning/Advice ---
-        reasoning_model="qwen/qwen3-4b:free",
+        reasoning_model="z-ai/glm-4.5-air:free",
         reasoning_temp=0.7,
         reasoning_max_tokens=2000,
         reasoning_use_system=True,
-        reasoning_reasoning=True,
+        reasoning_reasoning=False,
     )
 
 # Initialize Modules
 try:
     triage_module = TriageModule()
     router_module = SemanticRouterModule()
+    retrieval_module = LegalRetrievalModule()
+    
+    # Check and Build Initial FAISS Index if missing
+    index_dir = os.path.join(os.getcwd(), "localfiles", "legal-basis")
+    index_file = os.path.join(index_dir, "combined_index.faiss")
+    chunks_file = os.path.join(index_dir, "combined_index.json")
+    
+    if os.path.exists(index_file) and os.path.exists(chunks_file):
+        print(">>> Loading existing FAISS index...")
+        retrieval_module._load_index_(index_file, chunks_file)
+    else:
+        print(">>> Building initial FAISS index for all jurisdictions (this may take a while)...")
+        os.makedirs(index_dir, exist_ok=True)
+        retrieval_module.build_and_save_index(
+            corpus_dir="legal-corpus",
+            output_dir=index_dir,
+            index_prefix="combined_index"
+        )
+        print(">>> FAISS index built and saved successfully.")
+        
     print(">>> Modules initialized successfully.")
 except Exception as e:
     print(f">>> Error initializing modules: {e}")
     triage_module = None
     router_module = None
+    retrieval_module = None
 
 # In-memory session storage
 # Format: { "session_id": { "route": "...", "history": [...] } }
@@ -105,9 +126,18 @@ def chat():
                 # --- Triage Step ---
                 yield json.dumps({"type": "step", "content": "Normalizing input and detecting language..."}) + "\n"
                 
-                triaged_data = triage_module._process_request_(user_input)
-                normalized_text = triaged_data.get("normalized_text", "")
-                detected_language = triaged_data.get("detected_language", "Unknown")
+                normalized_text = user_input
+                detected_language = "Unknown"
+                
+                if triage_module:
+                    try:
+                        triaged_data = triage_module._process_request_(user_input)
+                        if triaged_data and triaged_data.get("normalized_text"):
+                            normalized_text = triaged_data.get("normalized_text", user_input)
+                        detected_language = triaged_data.get("detected_language", "Unknown")
+                    except Exception as triage_err:
+                        print(f"Triage fallback used due to error: {triage_err}")
+                        yield json.dumps({"type": "step", "content": "Triage omitted (fallback applied)..."}) + "\n"
                 
                 yield json.dumps({
                     "type": "data", 
@@ -118,15 +148,53 @@ def chat():
                     }
                 }) + "\n"
 
+                # --- Retrieval Step (RAG) ---
+                yield json.dumps({"type": "step", "content": "Retrieving relevant legal context..."}) + "\n"
+                
+                context_str = ""
+                if retrieval_module:
+                    try:
+                        retrieval_output = retrieval_module._process_retrieval_(normalized_text)
+                        retrieved_chunks = retrieval_output.get("retrieved_chunks", [])
+                        
+                        if retrieved_chunks:
+                            # Send data to frontend
+                            yield json.dumps({
+                                "type": "rag_context",
+                                "title": "Legal Sources Retrieved",
+                                "chunks": [{
+                                    "text": chunk.get("chunk", ""), 
+                                    "metadata": chunk.get("metadata", {}), 
+                                    "score": float(chunk.get("score", 0.0))
+                                } for chunk in retrieved_chunks[:3]]
+                            }) + "\n"
+                            
+                            # Construct context string
+                            context_str = "\n".join([c.get("chunk", "") for c in retrieved_chunks])
+                        else:
+                            yield json.dumps({"type": "step", "content": "No relevant context found..."}) + "\n"
+                    except Exception as rag_err:
+                        print(f"RAG retrieval error: {rag_err}")
+                        yield json.dumps({"type": "step", "content": "Retrieval omitted (fallback applied)..."}) + "\n"
+
                 # --- Routing Step ---
                 if normalized_text:
                     yield json.dumps({"type": "step", "content": "Routing query to appropriate model..."}) + "\n"
                     
-                    routing_output = router_module._process_routing_(normalized_text)
-                    classification = routing_output.get("classification", {})
-                    route = classification.get("route", "Unknown")
-                    confidence = classification.get("confidence", 0.0)
-                    response_text = routing_output.get("response_text")
+                    route = "Unknown"
+                    confidence = 0.0
+                    response_text = None
+                    
+                    if router_module:
+                        try:
+                            routing_output = router_module._process_routing_(normalized_text, context=context_str)
+                            classification = routing_output.get("classification", {})
+                            route = classification.get("route", "Unknown")
+                            confidence = classification.get("confidence", 0.0)
+                            response_text = routing_output.get("response_text")
+                        except Exception as route_err:
+                            print(f"Routing error: {route_err}")
+                            response_text = "I am currently unable to route your query successfully due to a technical error."
                     
                     yield json.dumps({
                         "type": "data",

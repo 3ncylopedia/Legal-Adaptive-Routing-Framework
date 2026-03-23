@@ -53,6 +53,8 @@ chatForm.addEventListener('submit', async (e) => {
                         addProcessStep(data.content);
                     } else if (data.type === 'data') {
                         addProcessData(data.title, data.data);
+                    } else if (data.type === 'rag_context') {
+                        addProcessRagContext(data.title, data.chunks);
                     } else if (data.type === 'result') {
                         // Replace typing indicator with actual text
                         if (assistantText === '') {
@@ -166,6 +168,65 @@ function addProcessData(title, dataObj) {
     }
 }
 
+function addProcessRagContext(title, chunks) {
+    const container = document.createElement('div');
+    container.classList.add('step-data', 'rag-container');
+
+    const header = document.createElement('strong');
+    header.style.display = 'block';
+    header.style.marginBottom = '8px';
+    header.innerText = title;
+    container.appendChild(header);
+
+    // store chunks for modal
+    window.currentRagChunks = chunks;
+
+    chunks.forEach((chunk, index) => {
+        const sourceCard = document.createElement('div');
+        sourceCard.classList.add('rag-source-card');
+        
+        let metaHtml = '';
+        if (chunk.metadata && Object.keys(chunk.metadata).length > 0) {
+            metaHtml = `
+                <div class="rag-metadata-tags">
+                    <span class="rag-tag jurisdiction-tag">${chunk.metadata.jurisdiction || 'Unknown'}</span>
+                    <span class="rag-tag category-tag">${chunk.metadata.category || 'Law'}</span>
+                </div>
+                <div class="rag-law-title">${chunk.metadata.title || ''}</div>
+                <div class="rag-law-source"><i>Source: ${chunk.metadata.source_file || 'Unknown'}</i></div>
+            `;
+        }
+        
+        sourceCard.innerHTML = `
+            <div class="rag-source-header" onclick="this.parentElement.classList.toggle('expanded')">
+               <span class="rag-source-title">Source ${index + 1} (Score: ${chunk.score.toFixed(2)})</span>
+               <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+            <div class="rag-source-content">
+                ${metaHtml}
+                <div class="rag-text-preview">${chunk.text}</div>
+            </div>
+        `;
+        container.appendChild(sourceCard);
+    });
+
+    // Add "View in Modal" button
+    const viewBtnDiv = document.createElement('div');
+    viewBtnDiv.classList.add('rag-source-card-actions');
+    viewBtnDiv.innerHTML = `<button class="rag-view-btn" onclick="openRagModal()"><i class="fas fa-expand-arrows-alt"></i> View Retrieved Laws</button>`;
+    container.appendChild(viewBtnDiv);
+
+    const lastStep = processLog.lastElementChild;
+    if (lastStep && lastStep.classList.contains('step-item')) {
+        lastStep.appendChild(container);
+    } else {
+        processLog.appendChild(container);
+    }
+    if (processLog.parentElement) {
+        processLog.parentElement.scrollTop = processLog.parentElement.scrollHeight;
+    }
+}
+
 function formatResponse(text) {
     // Simple markdown-to-html converter (very basic)
     // Replace \n with <br>
@@ -174,4 +235,58 @@ function formatResponse(text) {
         .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
         .replace(/\n/g, '<br>');
     return formatted;
+}
+
+// --- Modal Logic ---
+const ragModal = document.getElementById('rag-modal');
+const closeModalBtn = document.getElementById('close-modal-btn');
+const modalRagContent = document.getElementById('modal-rag-content');
+
+if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', () => {
+        ragModal.classList.add('hidden');
+    });
+}
+
+// Close when clicking outside of modal container
+if (ragModal) {
+    ragModal.addEventListener('click', (e) => {
+        if (e.target === ragModal) {
+            ragModal.classList.add('hidden');
+        }
+    });
+}
+
+function openRagModal() {
+    if (!window.currentRagChunks || window.currentRagChunks.length === 0) return;
+    
+    modalRagContent.innerHTML = '';
+    
+    window.currentRagChunks.forEach((chunk, i) => {
+        const div = document.createElement('div');
+        div.classList.add('modal-rag-item');
+        
+        let metaHtml = '';
+        if (chunk.metadata && Object.keys(chunk.metadata).length > 0) {
+            metaHtml = `
+                <div class="modal-metadata-header">
+                    <div class="rag-metadata-tags">
+                        <span class="rag-tag jurisdiction-tag">${chunk.metadata.jurisdiction || 'Unknown'}</span>
+                        <span class="rag-tag category-tag">${chunk.metadata.category || 'Law'}</span>
+                    </div>
+                    <div class="rag-law-title">${chunk.metadata.title || ''}</div>
+                    <div class="rag-law-source"><i>Source: ${chunk.metadata.source_file || 'Unknown'}</i></div>
+                </div>
+            `;
+        }
+        
+        div.innerHTML = `
+            <div class="modal-rag-score"><span>Source ${i + 1}</span> <span>Score: ${(chunk.score || 0).toFixed(3)}</span></div>
+            ${metaHtml}
+            <div class="modal-rag-text">${formatResponse(chunk.text)}</div>
+        `;
+        modalRagContent.appendChild(div);
+    });
+    
+    ragModal.classList.remove('hidden');
 }

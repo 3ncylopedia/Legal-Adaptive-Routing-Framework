@@ -101,14 +101,16 @@ class FrameworkConfig:
         "SAFETY & BOUNDARIES:\n"
         "- You are NOT a lawyer. Do NOT give legal advice.\n"
         "- Do NOT predict court outcomes.\n"
+        "- DO NOT output very long information try to make it compact and precise.\n"
+        "- Analyze the Injected Context Information if you can be used or be refered.\n"
         "- Use simple, clear language for non-lawyers."
     )
 
     ## @const_ Legal Retrieval (RAG) Module Configuration
     _RETRIEVAL_MODEL = os.getenv("RETRIEVAL_MODEL", "sentence-transformers/all-minilm-l6-v2")
     _RETRIEVAL_TOP_K = int(os.getenv("RETRIEVAL_TOP_K", "5"))
-    _RETRIEVAL_CHUNK_SIZE = int(os.getenv("RETRIEVAL_CHUNK_SIZE", "512"))
-    _RETRIEVAL_CHUNK_OVERLAP = int(os.getenv("RETRIEVAL_CHUNK_OVERLAP", "64"))
+    _RETRIEVAL_CHUNK_SIZE = int(os.getenv("RETRIEVAL_CHUNK_SIZE", "15000"))
+    _RETRIEVAL_CHUNK_OVERLAP = int(os.getenv("RETRIEVAL_CHUNK_OVERLAP", "0"))
     
     ## @const_ Pre-built Index Paths (Optional)
     _RETRIEVAL_INDEX_PATH = os.getenv("RETRIEVAL_INDEX_PATH", None)

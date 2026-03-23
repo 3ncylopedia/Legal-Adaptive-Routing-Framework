@@ -483,3 +483,256 @@ body {
         height: 65%;
     }
 }
+
+/* =========================================
+   RAG Source Card Styles
+========================================= */
+.rag-container {
+    background: rgba(26, 31, 46, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.rag-source-card {
+    background: rgba(13, 17, 23, 0.5);
+    border: 1px solid rgba(139, 155, 180, 0.1);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.rag-source-card:last-child {
+    margin-bottom: 0;
+}
+
+.rag-source-header {
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+}
+
+.rag-source-card:hover .rag-source-header {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.rag-source-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.toggle-icon {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    transition: transform 0.3s ease;
+}
+
+.rag-source-content {
+    max-height: 0;
+    padding: 0 12px;
+    margin: 0;
+    opacity: 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.rag-source-card.expanded {
+    border-color: rgba(94, 234, 212, 0.3);
+}
+
+.rag-source-card.expanded .rag-source-header {
+    border-bottom-color: rgba(139, 155, 180, 0.1);
+}
+
+.rag-source-card.expanded .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.rag-source-card.expanded .rag-source-content {
+    max-height: 500px;
+    padding: 12px;
+    opacity: 1;
+    margin-bottom: 5px;
+}
+
+/* =========================================
+   RAG Modal Styles (Updated)
+========================================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.modal-container {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    transform: translateY(0);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.hidden .modal-container {
+    transform: translateY(20px);
+}
+
+.modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close-btn:hover {
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.modal-rag-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.modal-rag-score {
+    font-size: 0.8rem;
+    color: var(--accent-color);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+}
+
+.rag-view-btn {
+    margin-top: 10px;
+    background: rgba(168, 199, 250, 0.15);
+    border: 1px solid var(--accent-color);
+    color: var(--accent-color);
+    padding: 6px 14px;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    align-self: flex-start;
+}
+
+.rag-view-btn:hover {
+    background: rgba(168, 199, 250, 0.25);
+    transform: translateY(-1px);
+}
+
+.rag-source-card-actions {
+    padding: 10px 12px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
+/* Metadata Styles */
+.rag-metadata-tags {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.rag-tag {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.jurisdiction-tag {
+    background: rgba(168, 199, 250, 0.15);
+    color: #A8C7FA;
+    border: 1px solid rgba(168, 199, 250, 0.3);
+}
+
+.category-tag {
+    background: rgba(138, 180, 248, 0.1);
+    color: #8ab4f8;
+    border: 1px solid rgba(138, 180, 248, 0.2);
+}
+
+.rag-law-title {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    font-size: 0.95rem;
+}
+
+.rag-law-source {
+    color: var(--text-tertiary);
+    font-size: 0.8rem;
+    margin-bottom: 12px;
+}
+
+.rag-text-preview {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 8px;
+    color: var(--text-secondary);
+}
+
+.modal-metadata-header {
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+}

@@ -103,8 +103,8 @@ LegalRetrievalModule(
 | Parameter | Config Source | Default Value |
 |:---|:---|:---|
 | Model | `_RETRIEVAL_MODEL` | `"sentence-transformers/all-minilm-l6-v2"` |
-| Chunk Size | `_RETRIEVAL_CHUNK_SIZE` | `512` characters |
-| Chunk Overlap | `_RETRIEVAL_CHUNK_OVERLAP` | `64` characters |
+| Chunk Size | `_RETRIEVAL_CHUNK_SIZE` | `15000` characters |
+| Chunk Overlap | `_RETRIEVAL_CHUNK_OVERLAP` | `0` characters |
 | Top K | `_RETRIEVAL_TOP_K` | `5` results |
 
 **Basic instantiation:**
@@ -171,6 +171,7 @@ The **main entry point** for retrieval. Returns the most relevant document chunk
     "retrieved_chunks": [              # List of relevant chunks, ranked by similarity
         {
             "chunk": str,              # The raw text chunk from the index
+            "metadata": dict,          # Dictionary tracking jurisdiction, title, source_file, and category
             "score": float             # FAISS L2 distance (lower = more similar)
         },
         ...
@@ -291,15 +292,15 @@ EmbeddingManager(
 |:---|:---|:---|:---|
 | `api_key` | `str` | `FrameworkConfig._API_KEY` | OpenRouter API key |
 | `model` | `str` | `FrameworkConfig._RETRIEVAL_MODEL` | Embedding model identifier |
-| `chunk_size` | `int` | `FrameworkConfig._RETRIEVAL_CHUNK_SIZE` (512) | Max characters per chunk |
-| `chunk_overlap` | `int` | `FrameworkConfig._RETRIEVAL_CHUNK_OVERLAP` (64) | Character overlap between chunks |
+| `chunk_size` | `int` | `FrameworkConfig._RETRIEVAL_CHUNK_SIZE` (15000) | Max characters per chunk |
+| `chunk_overlap` | `int` | `FrameworkConfig._RETRIEVAL_CHUNK_OVERLAP` (0) | Character overlap between chunks |
 
 **Internal state:**
 
 | Attribute | Type | Description |
 |:---|:---|:---|
 | `_index` | `faiss.IndexFlatL2` or `None` | The FAISS vector index |
-| `_chunks` | `list[str]` | Stored text chunks aligned with index vectors |
+| `_chunks` | `list[dict]` | Stored payload dicts containing `{"text": str, "metadata": dict}` aligned with vectors |
 | `_dimension` | `int` or `None` | Embedding vector dimension, set on first embed |
 
 ---
@@ -370,7 +371,7 @@ Chunks each document, generates embeddings, and adds them to the FAISS index.
 
 | Parameter | Type | Description |
 |:---|:---|:---|
-| `documents` | `list[str]` | Raw document texts |
+| `documents` | `list[dict]` / `list[str]` | Documents (dicts containing content and metadata, or plain strings) |
 
 **Behavior:**
 - On first call, initializes the FAISS `IndexFlatL2` using the embedding dimension
@@ -394,7 +395,7 @@ Embeds the query and retrieves the nearest chunks from the FAISS index.
 | `query` | `str` | — | Search query string |
 | `top_k` | `int` | `FrameworkConfig._RETRIEVAL_TOP_K` (5) | Number of results |
 
-**Returns**: `list[dict]` — Each dict contains `{"chunk": str, "score": float}`
+**Returns**: `list[dict]` — Each dict contains `{"chunk": str, "metadata": dict, "score": float}`
 
 **Behavior:**
 - Returns empty list if no index exists or index is empty
@@ -678,8 +679,13 @@ retriever = LegalRetrievalModule(embedding_manager=custom_manager)
 
 **Sizing guidelines:**
 
+The framework defaults to **1-to-1 document-level chunking** (`15000` size, `0` overlap). This intentionally maps exactly one JSON corpus file to one vector so laws aren't cut in half.
+
+If your corpus features giant un-split documents, adjust it back down:
+
 | Document Type | Recommended Chunk Size | Recommended Overlap |
 |:---|:---|:---|
+| Modular JSON (Default) | 15000+ | 0 |
 | Short statutes/articles | 256–512 | 32–64 |
 | Long legal texts | 512–1024 | 64–200 |
 | Very dense contracts | 1024–2048 | 200–400 |

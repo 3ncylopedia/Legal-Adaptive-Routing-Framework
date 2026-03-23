@@ -115,7 +115,15 @@ class LegalRetrievalModule:
                 
                 formatted_text = f"Jurisdiction: {jurisdiction}\nTitle: {title}\n\n{content}"
                 if content.strip():
-                    docs.append(formatted_text)
+                    docs.append({
+                        "content": formatted_text,
+                        "metadata": {
+                            "jurisdiction": jurisdiction,
+                            "title": title,
+                            "category": data.get("metadata", {}).get("corpus_category", "Unknown"),
+                            "source_file": data.get("metadata", {}).get("source_file", "Unknown")
+                        }
+                    })
             except Exception as e:
                 print(f"Error reading {file_path}: {e}")
                 

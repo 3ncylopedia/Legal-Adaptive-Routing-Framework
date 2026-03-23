@@ -70,6 +70,22 @@
             </div>
         </main>
     </div>
+
+    <!-- RAG Modal Overlay -->
+    <div id="rag-modal" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2><i class="fas fa-balance-scale"></i> Legal Basis</h2>
+                <button id="close-modal-btn" class="close-btn" aria-label="Close modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-rag-content">
+                <!-- Chunks injected here via JS -->
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 

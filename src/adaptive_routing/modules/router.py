@@ -21,27 +21,33 @@ class SemanticRouterModule:
         self._classifier = classifier or RoutingClassifier(api_key)
         self._generator = generator or LegalGenerator(api_key)
 
-    def _process_routing_(self, normalized_text: str) -> dict:
+    def _process_routing_(self, normalized_text: str, context: str = None) -> dict:
         """
-        @func_ _process_routing_ (@params normalized_text)
+        @func_ _process_routing_ (@params normalized_text, context)
         @params normalized_text : (str) Standardized user query.
+        @params context : (str, optional) RAG retrieved context to enhance generation.
         @return_ dict : Contains routing metadata and the final LLM response.
         @logic_ 
-            1. Calls classifier to get route (General vs Reasoning).
-            2. If route is valid, calls generator.
+            1. Calls classifier to get route (General vs Reasoning) using ONLY the safe normalized query.
+            2. If route is valid, appends context to the query and calls generator.
             3. Returns combined result.
         """
-        ## @logic_ Classify
+        ## @logic_ Classify using clean normalized text
         classification = self._classifier._route_query_(normalized_text)
         route = classification.get('route')
         
-        response_text = None
-        
-        ## @logic_ Generate if valid
+        ## @logic_ Generate if valid, passing augmented context
         if route and route != "PATHWAY_2":
-             response_text = self._generator._dispatch_(normalized_text, route)
+             augmented_query = normalized_text
+             if context:
+                 augmented_query += f"\n\nContext Information:\n{context}\nPlease use the provided context to answer the user query if applicable."
+             try:
+                 response_text = self._generator._dispatch_(augmented_query, route)
+             except Exception as e:
+                 print(f"Generator Error: {e}")
+                 response_text = "I apologize, but I encountered an error while formulating my legal response. Please try again."
         else:
-             response_text = "Hi There can you please clarify your inquiry, provide specific details."
+             response_text = "Hi There, can you please clarify your inquiry and provide specific details."
 
         ## @logic_ Combine results
         return {
