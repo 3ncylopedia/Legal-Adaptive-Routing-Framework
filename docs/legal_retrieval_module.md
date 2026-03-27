@@ -39,8 +39,8 @@ The **Legal Retrieval Module** implements the **Retrieval-Augmented Generation (
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                  LegalRetrievalModule                         │
-│                     (Orchestrator)                            │
+│                  LegalRetrievalModule                        │
+│                     (Orchestrator)                           │
 │                                                              │
 │  ┌────────────────────────┐    ┌──────────────────────────┐  │
 │  │   EmbeddingManager     │    │    LegalRetriever        │  │
@@ -52,7 +52,7 @@ The **Legal Retrieval Module** implements the **Retrieval-Augmented Generation (
 │  └────────────────────────┘    └──────────────────────────┘  │
 │                                                              │
 │  ┌────────────────────────────────────────────────────────┐  │
-│  │                  FAISS Vector Store                     │  │
+│  │                  FAISS Vector Store                    │  │
 │  │              (IndexFlatL2 — L2 Distance)               │  │
 │  └────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────┘
