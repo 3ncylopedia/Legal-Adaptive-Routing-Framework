@@ -51,7 +51,7 @@ FrameworkConfig._update_settings_(
         reasoning_temp=0.7,
         reasoning_max_tokens=2000,
         reasoning_use_system=True,
-        reasoning_reasoning=False,
+        reasoning_reasoning=True,
 
         # --- Casual Conversation (Greetings, Thanks, Small Talk) ---
         casual_model="liquid/lfm-2.5-1.2b-instruct:free",

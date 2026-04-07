@@ -111,30 +111,44 @@ LegalAdaptiveRoutingFramework/
    ```
 
 3. **Setup Environment**
-   Create a `.env` file in the root directory:
+   You can set up your `.env` configuration file in one of two ways:
+   
+   **Option A: Interactive Setup via CLI**
+   Simply run `python CLI.py`. The interface will guide you through adding your models and API key, and will offer to generate/update the `.env` file automatically for you.
+
+   **Option B: Manual Setup**
+   Create a `.env` file in the root directory manually with the following format:
    ```env
+   # Mandatory
    OPENROUTER_API_KEY=your_api_key_here
-   # Optional Overrides
-   TRIAGE_MODEL=google/gemma-3-4b-it:free
+   
+   # Optional Model Overrides
+   TRIAGE_MODEL=z-ai/glm-4.5-air:free
+   ROUTER_MODEL=z-ai/glm-4.5-air:free
+   GENERAL_MODEL=z-ai/glm-4.5-air:free
+   REASONING_MODEL=nvidia/nemotron-3-nano-30b-a3b:free
+   CASUAL_MODEL=liquid/lfm-2.5-1.2b-instruct:free
    ```
 
 ---
 
 ## 🚀 Usage
 
-### Running the Full Pipeline
-Run the main driver script to see the pipeline in action:
+### 🖥️ CLI Version
+Launch the interactive command-line interface with customizable settings and an isolated terminal popup:
 
 ```bash
-python main.py
+python CLI.py
 ```
+*Note: A discrete popup terminal will launch to run the assistant clearly on both Windows and macOS.*
 
-### Exploring Use Cases
-To explore different RAG pipelines (from basic retrieval to full multi-index routing), run the included examples:
+### 🌐 GUI Version
+To use the Web-based Graphical User Interface, start the Flask web server:
 
 ```bash
-python use-cases.py
+python WEB.py
 ```
+Then, open your browser and navigate to the address displayed in the terminal (usually `http://localhost:5220`).
 
 ### Using as a Library
 You can import the modules directly into your Python application:
