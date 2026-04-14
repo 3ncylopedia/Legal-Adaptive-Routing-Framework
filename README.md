@@ -217,5 +217,5 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 <div align="center">
   <br/>
-  <sub>Built with ❤️ by Team 404FoundUs</sub>
+  <sub>Thesis Study by Team 404FoundUs</sub>
 </div>
