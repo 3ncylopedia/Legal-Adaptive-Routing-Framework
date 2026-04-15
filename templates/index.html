@@ -4,136 +4,281 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agapay AI — Legal Adaptive Routing Framework</title>
-    <meta name="description" content="AI-powered legal information assistant for OFWs, built by Saint Louis University Team 404FoundUs">
+    <title>Agapay AI — Legal Routing Framework</title>
+    <meta name="description" content="AI-powered legal information assistant for OFWs">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
-    <div class="app-container">
-        <!-- Sidebar / Pipeline Panel -->
-        <aside class="process-panel" id="process-panel">
-            <div class="panel-header">
-                <div class="panel-title">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                    </svg>
-                    <span>Pipeline Monitor</span>
-                </div>
-                <div class="status-indicator" id="status-indicator">
-                    <span class="status-dot"></span>
-                    <span class="status-text">Ready</span>
-                </div>
-            </div>
-
-            <!-- Route Badge (shown after classification) -->
-            <div class="route-badge-container" id="route-badge-container" style="display:none;">
-                <div class="route-badge" id="route-badge">
-                    <span class="route-badge-label">Route</span>
-                    <span class="route-badge-value" id="route-badge-value">—</span>
-                    <span class="route-badge-confidence" id="route-badge-confidence"></span>
-                </div>
-            </div>
-
-            <div class="process-log-container">
-                <div class="process-log" id="process-log">
-                    <div class="empty-state" id="empty-state">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M12 16v-4M12 8h.01"/>
-                        </svg>
-                        <p>System operational</p>
-                        <p class="empty-sub">Pipeline steps will appear here</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Toggle button for mobile -->
-            <button class="panel-toggle" id="panel-toggle" aria-label="Toggle pipeline panel">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M15 18l-6-6 6-6"/>
-                </svg>
-            </button>
-        </aside>
-
-        <!-- Main Chat Area -->
+    <div class="app-wrapper">
+        <!-- Main Application Area -->
         <main class="chat-container">
             <header class="chat-header">
                 <div class="header-content">
                     <div class="header-top">
                         <h1>Agapay AI</h1>
-                        <span class="version-tag">v2.0</span>
+                        <span class="pro-badge">SLU 404FoundUs</span>
                     </div>
-                    <p class="subtitle">SLU Legal Adaptive Routing Framework</p>
                 </div>
-                <button class="mobile-panel-btn" id="mobile-panel-btn" aria-label="Show pipeline">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                    </svg>
-                </button>
+                <div class="header-actions" style="display:flex; gap: 8px;">
+                    <button class="theme-btn" id="theme-btn" aria-label="Toggle Theme">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path class="moon-icon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                    <button class="settings-btn" id="settings-btn" aria-label="Settings">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+                        </svg>
+                    </button>
+                </div>
             </header>
 
             <div class="chat-history-container">
                 <div class="chat-history" id="chat-history">
-                    <div class="message system welcome-message">
-                        <div class="avatar system-avatar">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                            </svg>
-                        </div>
-                        <div class="bubble">
-                            <h3>Welcome to Agapay AI</h3>
-                            <p>Andito si Atty. Agapay AI para magbigay ng legal na kaalaman para sa mga OFWs.</p>
-                            <div class="welcome-hints">
-                                <button class="hint-chip" onclick="sendPreset('What are my rights as an OFW in Hong Kong?')">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
-                                    OFW Rights in HK
-                                </button>
-                                <button class="hint-chip" onclick="sendPreset('What is the minimum wage for domestic helpers?')">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                                    Minimum Wage
-                                </button>
-                                <button class="hint-chip" onclick="sendPreset('My employer did not pay me for 2 months, what should I do?')">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>
-                                    Unpaid Wages
-                                </button>
-                            </div>
+                    <div class="welcome-section">
+                        <h2>Saan ako makakatulong, OFW?</h2>
+                        <div class="welcome-hints">
+                            <button class="hint-card" onclick="sendPreset('What are my rights as an OFW in Hong Kong?')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+                                <span>Learn about your basic rights in HK</span>
+                            </button>
+                            <button class="hint-card" onclick="sendPreset('What is the minimum wage for domestic helpers?')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                <span>Check the latest wage and salary policies</span>
+                            </button>
+                            <button class="hint-card" onclick="sendPreset('My employer did not pay me for 2 months, what should I do?')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>
+                                <span>Resolve disputes involving unpaid wages</span>
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Sleek Input Area -->
             <div class="input-area-wrapper">
-                <div class="input-area">
+                <div class="input-container">
                     <form id="chat-form">
-                        <input type="text" id="user-input" placeholder="Describe your legal situation or ask a question..."
-                            autocomplete="off">
-                        <button type="submit" id="send-btn" aria-label="Send message">
+                        <textarea id="user-input" placeholder="Ask anything about legal concerns..." rows="1"></textarea>
+                        <button type="submit" id="send-btn" aria-label="Ask">
                             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                 <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </button>
                     </form>
-                    <div class="disclaimer">AI responses are for informational purposes only and do not constitute legal advice.</div>
                 </div>
+                <div class="disclaimer">Agapay AI generates responses that may contain errors. Always consult a real lawyer for official advice.</div>
             </div>
         </main>
+    </div>
+
+    <!-- Configuration Modal -->
+    <div id="config-modal" class="modal-overlay hidden">
+        <div class="modal-container config-modal">
+            <div class="modal-header">
+                <h2>Framework Configuration</h2>
+                <button id="close-config-btn" class="close-btn" aria-label="Close modal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="config-form">
+                    <div class="form-group">
+                        <label>OpenRouter API Key</label>
+                        <input type="password" id="input_api_key" autocomplete="off" placeholder="sk-or-v1-...">
+                    </div>
+                    <!-- Triage Setup -->
+                    <h3 class="form-section-title">Triage Options</h3>
+                    <div class="form-row">
+                        <div class="form-group" style="flex:2">
+                            <label>Triage Model</label>
+                            <input type="text" id="input_triage_model">
+                        </div>
+                        <div class="form-group">
+                            <label>Temp</label>
+                            <input type="number" step="0.1" id="input_triage_temp">
+                        </div>
+                        <div class="form-group">
+                            <label>Tokens</label>
+                            <input type="number" id="input_triage_max_tokens">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Use System Prompt?</label>
+                            <select id="input_triage_use_system">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Enable Reasoning Output?</label>
+                            <select id="input_triage_reasoning">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Router Setup -->
+                    <h3 class="form-section-title">Router Options</h3>
+                    <div class="form-row">
+                        <div class="form-group" style="flex:2">
+                            <label>Router Model</label>
+                            <input type="text" id="input_router_model">
+                        </div>
+                        <div class="form-group">
+                            <label>Temp</label>
+                            <input type="number" step="0.1" id="input_router_temp">
+                        </div>
+                        <div class="form-group">
+                            <label>Tokens</label>
+                            <input type="number" id="input_router_max_tokens">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Use System Prompt?</label>
+                            <select id="input_router_use_system">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Enable Reasoning Output?</label>
+                            <select id="input_router_reasoning">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Reasoning Logic Setup -->
+                    <h3 class="form-section-title">Reasoning (Legal Logic) Settings</h3>
+                    <div class="form-row">
+                        <div class="form-group" style="flex:2">
+                            <label>Reasoning Model</label>
+                            <input type="text" id="input_reasoning_model">
+                        </div>
+                        <div class="form-group">
+                            <label>Temp</label>
+                            <input type="number" step="0.1" id="input_reasoning_temp">
+                        </div>
+                        <div class="form-group">
+                            <label>Tokens</label>
+                            <input type="number" id="input_reasoning_max_tokens">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Use System Prompt?</label>
+                            <select id="input_reasoning_use_system">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Enable Reasoning Output?</label>
+                            <select id="input_reasoning_reasoning">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>System Instructions</label>
+                        <textarea id="input_reasoning_instructions"></textarea>
+                    </div>
+                    <!-- General Setup -->
+                    <h3 class="form-section-title">General Response Settings</h3>
+                    <div class="form-row">
+                        <div class="form-group" style="flex:2">
+                            <label>General Model</label>
+                            <input type="text" id="input_general_model">
+                        </div>
+                        <div class="form-group">
+                            <label>Temp</label>
+                            <input type="number" step="0.1" id="input_general_temp">
+                        </div>
+                        <div class="form-group">
+                            <label>Tokens</label>
+                            <input type="number" id="input_general_max_tokens">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Use System Prompt?</label>
+                            <select id="input_general_use_system">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Enable Reasoning Output?</label>
+                            <select id="input_general_reasoning">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>System Instructions</label>
+                        <textarea id="input_general_instructions"></textarea>
+                    </div>
+                    <!-- Casual Setup -->
+                    <h3 class="form-section-title">Casual Options</h3>
+                    <div class="form-row">
+                        <div class="form-group" style="flex:2">
+                            <label>Casual Model</label>
+                            <input type="text" id="input_casual_model">
+                        </div>
+                        <div class="form-group">
+                            <label>Temp</label>
+                            <input type="number" step="0.1" id="input_casual_temp">
+                        </div>
+                        <div class="form-group">
+                            <label>Tokens</label>
+                            <input type="number" id="input_casual_max_tokens">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Use System Prompt?</label>
+                            <select id="input_casual_use_system">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Enable Reasoning Output?</label>
+                            <select id="input_casual_reasoning">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>System Instructions</label>
+                        <textarea id="input_casual_instructions"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="primary-btn">Save Configuration</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- RAG Detail Modal -->
     <div id="rag-modal" class="modal-overlay hidden">
         <div class="modal-container">
             <div class="modal-header">
-                <div class="modal-title-group">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                    </svg>
-                    <h2>Retrieved Legal Sources</h2>
-                </div>
-                <button id="close-modal-btn" class="close-btn" aria-label="Close modal">
+                <h2>Retrieved Legal Sources</h2>
+                <button id="close-rag-btn" class="close-btn" aria-label="Close modal">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 6L6 18M6 6l12 12"/>
                     </svg>
@@ -144,6 +289,10 @@
             </div>
         </div>
     </div>
+
+    <!-- CDNs for robust Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>

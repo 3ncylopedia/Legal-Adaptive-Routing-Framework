@@ -22,43 +22,7 @@ app = Flask(__name__)
 
 # --- Configuration ---
 FrameworkConfig._update_settings_(
-        # --- Authentication ---
-        api_key=os.getenv("OPENROUTER_API_KEY", ""),
-
-        #--- Triage Module (Normalization) ---
-        triage_model="z-ai/glm-4.5-air:free",
-        triage_temp=0.4,
-        triage_max_tokens=1500,
-        triage_use_system=True,
-        triage_reasoning=False,
-
-        # --- Semantic Router (Classification) ---
-        router_model="z-ai/glm-4.5-air:free",
-        router_temp=0.0,
-        router_max_tokens=1000,
-        router_use_system=True,
-        router_reasoning=False,
-
-        # --- Legal Generator: General Information ---
-        general_model="z-ai/glm-4.5-air:free",
-        general_temp=0.6,
-        general_max_tokens=1000,
-        general_use_system=True,
-        general_reasoning=False,
-
-        # --- Legal Generator: Reasoning/Advice ---
-        reasoning_model="nvidia/nemotron-3-nano-30b-a3b:free",
-        reasoning_temp=0.7,
-        reasoning_max_tokens=2000,
-        reasoning_use_system=True,
-        reasoning_reasoning=True,
-
-        # --- Casual Conversation (Greetings, Thanks, Small Talk) ---
-        casual_model="liquid/lfm-2.5-1.2b-instruct:free",
-        casual_temp=0.8,
-        casual_max_tokens=200,
-        casual_use_system=True,
-        casual_reasoning=False,
+        api_key=os.getenv("OPENROUTER_API_KEY", "")
     )
 
 # Initialize Modules
@@ -277,6 +241,128 @@ def chat():
             print(f"Error processing request: {e}")
 
     return Response(stream_with_context(generate()), mimetype='application/x-ndjson')
+
+@app.route('/api/config', methods=['GET'])
+def get_config():
+    return json.dumps({
+        "api_key": FrameworkConfig._API_KEY or "",
+        
+        "triage_model": FrameworkConfig._TRIAGE_MODEL,
+        "triage_temp": FrameworkConfig._TRIAGE_TEMP,
+        "triage_max_tokens": FrameworkConfig._TRIAGE_MAX_TOKENS,
+        "triage_use_system": FrameworkConfig._TRIAGE_USE_SYSTEM,
+        "triage_reasoning": FrameworkConfig._TRIAGE_REASONING,
+        
+        "router_model": FrameworkConfig._ROUTER_MODEL,
+        "router_temp": FrameworkConfig._ROUTER_TEMP,
+        "router_max_tokens": FrameworkConfig._ROUTER_MAX_TOKENS,
+        "router_use_system": FrameworkConfig._ROUTER_USE_SYSTEM,
+        "router_reasoning": FrameworkConfig._ROUTER_REASONING,
+        
+        "general_model": FrameworkConfig._GENERAL_MODEL,
+        "general_temp": FrameworkConfig._GENERAL_TEMP,
+        "general_max_tokens": FrameworkConfig._GENERAL_MAX_TOKENS,
+        "general_use_system": FrameworkConfig._GENERAL_USE_SYSTEM,
+        "general_reasoning": FrameworkConfig._GENERAL_REASONING,
+        "general_instructions": FrameworkConfig._GENERAL_INSTRUCTIONS,
+        
+        "reasoning_model": FrameworkConfig._REASONING_MODEL,
+        "reasoning_temp": FrameworkConfig._REASONING_TEMP,
+        "reasoning_max_tokens": FrameworkConfig._REASONING_MAX_TOKENS,
+        "reasoning_use_system": FrameworkConfig._REASONING_USE_SYSTEM,
+        "reasoning_reasoning": FrameworkConfig._REASONING_REASONING,
+        "reasoning_instructions": FrameworkConfig._REASONING_INSTRUCTIONS,
+        
+        "casual_model": FrameworkConfig._CASUAL_MODEL,
+        "casual_temp": FrameworkConfig._CASUAL_TEMP,
+        "casual_max_tokens": FrameworkConfig._CASUAL_MAX_TOKENS,
+        "casual_use_system": FrameworkConfig._CASUAL_USE_SYSTEM,
+        "casual_reasoning": FrameworkConfig._CASUAL_REASONING,
+        "casual_instructions": FrameworkConfig._CASUAL_INSTRUCTIONS,
+    })
+
+@app.route('/api/config', methods=['POST'])
+def save_config():
+    data = request.json
+    
+    # Update active memory immediately
+    FrameworkConfig._update_settings_(
+        api_key=data.get('api_key', FrameworkConfig._API_KEY),
+        
+        triage_model=data.get('triage_model', FrameworkConfig._TRIAGE_MODEL),
+        triage_temp=float(data.get('triage_temp', FrameworkConfig._TRIAGE_TEMP)),
+        triage_max_tokens=int(data.get('triage_max_tokens', FrameworkConfig._TRIAGE_MAX_TOKENS)),
+        triage_use_system=bool(data.get('triage_use_system', FrameworkConfig._TRIAGE_USE_SYSTEM)),
+        triage_reasoning=bool(data.get('triage_reasoning', FrameworkConfig._TRIAGE_REASONING)),
+        
+        router_model=data.get('router_model', FrameworkConfig._ROUTER_MODEL),
+        router_temp=float(data.get('router_temp', FrameworkConfig._ROUTER_TEMP)),
+        router_max_tokens=int(data.get('router_max_tokens', FrameworkConfig._ROUTER_MAX_TOKENS)),
+        router_use_system=bool(data.get('router_use_system', FrameworkConfig._ROUTER_USE_SYSTEM)),
+        router_reasoning=bool(data.get('router_reasoning', FrameworkConfig._ROUTER_REASONING)),
+        
+        general_model=data.get('general_model', FrameworkConfig._GENERAL_MODEL),
+        general_temp=float(data.get('general_temp', FrameworkConfig._GENERAL_TEMP)),
+        general_max_tokens=int(data.get('general_max_tokens', FrameworkConfig._GENERAL_MAX_TOKENS)),
+        general_use_system=bool(data.get('general_use_system', FrameworkConfig._GENERAL_USE_SYSTEM)),
+        general_reasoning=bool(data.get('general_reasoning', FrameworkConfig._GENERAL_REASONING)),
+        general_instructions=data.get('general_instructions', FrameworkConfig._GENERAL_INSTRUCTIONS),
+        
+        reasoning_model=data.get('reasoning_model', FrameworkConfig._REASONING_MODEL),
+        reasoning_temp=float(data.get('reasoning_temp', FrameworkConfig._REASONING_TEMP)),
+        reasoning_max_tokens=int(data.get('reasoning_max_tokens', FrameworkConfig._REASONING_MAX_TOKENS)),
+        reasoning_use_system=bool(data.get('reasoning_use_system', FrameworkConfig._REASONING_USE_SYSTEM)),
+        reasoning_reasoning=bool(data.get('reasoning_reasoning', FrameworkConfig._REASONING_REASONING)),
+        reasoning_instructions=data.get('reasoning_instructions', FrameworkConfig._REASONING_INSTRUCTIONS),
+        
+        casual_model=data.get('casual_model', FrameworkConfig._CASUAL_MODEL),
+        casual_temp=float(data.get('casual_temp', FrameworkConfig._CASUAL_TEMP)),
+        casual_max_tokens=int(data.get('casual_max_tokens', FrameworkConfig._CASUAL_MAX_TOKENS)),
+        casual_use_system=bool(data.get('casual_use_system', FrameworkConfig._CASUAL_USE_SYSTEM)),
+        casual_reasoning=bool(data.get('casual_reasoning', FrameworkConfig._CASUAL_REASONING)),
+        casual_instructions=data.get('casual_instructions', FrameworkConfig._CASUAL_INSTRUCTIONS),
+    )
+    
+    from dotenv import set_key
+    import os
+    env_file = os.path.join(os.getcwd(), ".env")
+    
+    # Save standard properties to env
+    set_key(env_file, "OPENROUTER_API_KEY", FrameworkConfig._API_KEY or "")
+    
+    set_key(env_file, "TRIAGE_MODEL", FrameworkConfig._TRIAGE_MODEL)
+    set_key(env_file, "TRIAGE_TEMP", str(FrameworkConfig._TRIAGE_TEMP))
+    set_key(env_file, "TRIAGE_MAX_TOKENS", str(FrameworkConfig._TRIAGE_MAX_TOKENS))
+    set_key(env_file, "TRIAGE_USE_SYSTEM", str(FrameworkConfig._TRIAGE_USE_SYSTEM))
+    set_key(env_file, "TRIAGE_REASONING", str(FrameworkConfig._TRIAGE_REASONING))
+    
+    set_key(env_file, "ROUTER_MODEL", FrameworkConfig._ROUTER_MODEL)
+    set_key(env_file, "ROUTER_TEMP", str(FrameworkConfig._ROUTER_TEMP))
+    set_key(env_file, "ROUTER_MAX_TOKENS", str(FrameworkConfig._ROUTER_MAX_TOKENS))
+    set_key(env_file, "ROUTER_USE_SYSTEM", str(FrameworkConfig._ROUTER_USE_SYSTEM))
+    set_key(env_file, "ROUTER_REASONING", str(FrameworkConfig._ROUTER_REASONING))
+    
+    set_key(env_file, "GENERAL_MODEL", FrameworkConfig._GENERAL_MODEL)
+    set_key(env_file, "GENERAL_TEMP", str(FrameworkConfig._GENERAL_TEMP))
+    set_key(env_file, "GENERAL_MAX_TOKENS", str(FrameworkConfig._GENERAL_MAX_TOKENS))
+    set_key(env_file, "GENERAL_USE_SYSTEM", str(FrameworkConfig._GENERAL_USE_SYSTEM))
+    set_key(env_file, "GENERAL_REASONING", str(FrameworkConfig._GENERAL_REASONING))
+    # Multiline instructions are hard to safely set_key dynamically depending on shell, but we can try representing them with single line escaping,
+    # or just rely on memory for this session. It's safer to not persist giant multi-line system prompts via dotenv set_key to avoid corrupting .env files.
+    
+    set_key(env_file, "REASONING_MODEL", FrameworkConfig._REASONING_MODEL)
+    set_key(env_file, "REASONING_TEMP", str(FrameworkConfig._REASONING_TEMP))
+    set_key(env_file, "REASONING_MAX_TOKENS", str(FrameworkConfig._REASONING_MAX_TOKENS))
+    set_key(env_file, "REASONING_USE_SYSTEM", str(FrameworkConfig._REASONING_USE_SYSTEM))
+    set_key(env_file, "REASONING_REASONING", str(FrameworkConfig._REASONING_REASONING))
+    
+    set_key(env_file, "CASUAL_MODEL", FrameworkConfig._CASUAL_MODEL)
+    set_key(env_file, "CASUAL_TEMP", str(FrameworkConfig._CASUAL_TEMP))
+    set_key(env_file, "CASUAL_MAX_TOKENS", str(FrameworkConfig._CASUAL_MAX_TOKENS))
+    set_key(env_file, "CASUAL_USE_SYSTEM", str(FrameworkConfig._CASUAL_USE_SYSTEM))
+    set_key(env_file, "CASUAL_REASONING", str(FrameworkConfig._CASUAL_REASONING))
+    
+    return json.dumps({"status": "success", "message": "Configuration updated successfully."})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5220)

@@ -1,49 +1,218 @@
 /* =============================================
-   Agapay AI — Client Script
-   SLU Legal Adaptive Routing Framework
+   Agapay AI — Perplexity-Style Client Script
    ============================================= */
 
+// DOM Elements
 const chatForm = document.getElementById('chat-form');
 const userInput = document.getElementById('user-input');
 const chatHistory = document.getElementById('chat-history');
-const processLog = document.getElementById('process-log');
-const statusIndicator = document.getElementById('status-indicator');
-const emptyState = document.getElementById('empty-state');
-const routeBadgeContainer = document.getElementById('route-badge-container');
-const routeBadgeValue = document.getElementById('route-badge-value');
-const routeBadgeConfidence = document.getElementById('route-badge-confidence');
-const mobilePanelBtn = document.getElementById('mobile-panel-btn');
-const processPanel = document.getElementById('process-panel');
+const settingsBtn = document.getElementById('settings-btn');
+const configModal = document.getElementById('config-modal');
+const closeConfigBtn = document.getElementById('close-config-btn');
+const configForm = document.getElementById('config-form');
 
 let isProcessing = false;
 let currentSessionId = null;
+window.currentRagChunks = []; // Global to store chunks for the modal
 
 // =============================================
-// Preset Messages (Welcome Hints)
+// Settings Modal & Theme Logic
 // =============================================
+const themeBtn = document.getElementById('theme-btn');
+const moonIconPath = "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"; // Moon
+const sunIconPath = "M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"; // Sun
+
+// Initialize theme from storage
+if(localStorage.getItem('theme') === 'dark') {
+    document.body.setAttribute('data-theme', 'dark');
+    themeBtn.querySelector('path').setAttribute('d', sunIconPath);
+}
+
+themeBtn.addEventListener('click', () => {
+    if(document.body.getAttribute('data-theme') === 'dark') {
+        document.body.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+        themeBtn.querySelector('path').setAttribute('d', moonIconPath);
+    } else {
+        document.body.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+        themeBtn.querySelector('path').setAttribute('d', sunIconPath);
+    }
+});
+
+settingsBtn.addEventListener('click', async () => {
+    configModal.classList.remove('hidden');
+    // Fetch current settings
+    try {
+        const res = await fetch('/api/config');
+        const data = await res.json();
+        document.getElementById('input_api_key').value = data.api_key || '';
+
+        // Triage
+        document.getElementById('input_triage_model').value = data.triage_model || '';
+        document.getElementById('input_triage_temp').value = data.triage_temp || 0;
+        document.getElementById('input_triage_max_tokens').value = data.triage_max_tokens || 1000;
+        document.getElementById('input_triage_use_system').value = data.triage_use_system ? "true" : "false";
+        document.getElementById('input_triage_reasoning').value = data.triage_reasoning ? "true" : "false";
+        
+        // Router
+        document.getElementById('input_router_model').value = data.router_model || '';
+        document.getElementById('input_router_temp').value = data.router_temp || 0;
+        document.getElementById('input_router_max_tokens').value = data.router_max_tokens || 1000;
+        document.getElementById('input_router_use_system').value = data.router_use_system ? "true" : "false";
+        document.getElementById('input_router_reasoning').value = data.router_reasoning ? "true" : "false";
+
+        // Reasoning
+        document.getElementById('input_reasoning_model').value = data.reasoning_model || '';
+        document.getElementById('input_reasoning_temp').value = data.reasoning_temp || 0;
+        document.getElementById('input_reasoning_max_tokens').value = data.reasoning_max_tokens || 2000;
+        document.getElementById('input_reasoning_use_system').value = data.reasoning_use_system ? "true" : "false";
+        document.getElementById('input_reasoning_reasoning').value = data.reasoning_reasoning ? "true" : "false";
+        document.getElementById('input_reasoning_instructions').value = data.reasoning_instructions || '';
+        
+        // General
+        document.getElementById('input_general_model').value = data.general_model || '';
+        document.getElementById('input_general_temp').value = data.general_temp || 0;
+        document.getElementById('input_general_max_tokens').value = data.general_max_tokens || 1000;
+        document.getElementById('input_general_use_system').value = data.general_use_system ? "true" : "false";
+        document.getElementById('input_general_reasoning').value = data.general_reasoning ? "true" : "false";
+        document.getElementById('input_general_instructions').value = data.general_instructions || '';
+
+        // Casual
+        document.getElementById('input_casual_model').value = data.casual_model || '';
+        document.getElementById('input_casual_temp').value = data.casual_temp || 0;
+        document.getElementById('input_casual_max_tokens').value = data.casual_max_tokens || 200;
+        document.getElementById('input_casual_use_system').value = data.casual_use_system ? "true" : "false";
+        document.getElementById('input_casual_reasoning').value = data.casual_reasoning ? "true" : "false";
+        document.getElementById('input_casual_instructions').value = data.casual_instructions || '';
+    } catch (e) {
+        console.error("Failed to load config", e);
+    }
+});
+
+closeConfigBtn.addEventListener('click', () => configModal.classList.add('hidden'));
+
+configForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+        api_key: document.getElementById('input_api_key').value,
+        
+        triage_model: document.getElementById('input_triage_model').value,
+        triage_temp: parseFloat(document.getElementById('input_triage_temp').value),
+        triage_max_tokens: parseInt(document.getElementById('input_triage_max_tokens').value) || 1000,
+        triage_use_system: document.getElementById('input_triage_use_system').value === "true",
+        triage_reasoning: document.getElementById('input_triage_reasoning').value === "true",
+        
+        router_model: document.getElementById('input_router_model').value,
+        router_temp: parseFloat(document.getElementById('input_router_temp').value),
+        router_max_tokens: parseInt(document.getElementById('input_router_max_tokens').value) || 1000,
+        router_use_system: document.getElementById('input_router_use_system').value === "true",
+        router_reasoning: document.getElementById('input_router_reasoning').value === "true",
+        
+        reasoning_model: document.getElementById('input_reasoning_model').value,
+        reasoning_temp: parseFloat(document.getElementById('input_reasoning_temp').value),
+        reasoning_max_tokens: parseInt(document.getElementById('input_reasoning_max_tokens').value) || 2000,
+        reasoning_use_system: document.getElementById('input_reasoning_use_system').value === "true",
+        reasoning_reasoning: document.getElementById('input_reasoning_reasoning').value === "true",
+        reasoning_instructions: document.getElementById('input_reasoning_instructions').value,
+        
+        general_model: document.getElementById('input_general_model').value,
+        general_temp: parseFloat(document.getElementById('input_general_temp').value),
+        general_max_tokens: parseInt(document.getElementById('input_general_max_tokens').value) || 1000,
+        general_use_system: document.getElementById('input_general_use_system').value === "true",
+        general_reasoning: document.getElementById('input_general_reasoning').value === "true",
+        general_instructions: document.getElementById('input_general_instructions').value,
+        
+        casual_model: document.getElementById('input_casual_model').value,
+        casual_temp: parseFloat(document.getElementById('input_casual_temp').value),
+        casual_max_tokens: parseInt(document.getElementById('input_casual_max_tokens').value) || 200,
+        casual_use_system: document.getElementById('input_casual_use_system').value === "true",
+        casual_reasoning: document.getElementById('input_casual_reasoning').value === "true",
+        casual_instructions: document.getElementById('input_casual_instructions').value,
+    };
+
+    const submitBtn = configForm.querySelector('button[type="submit"]');
+    const ogText = submitBtn.innerText;
+    submitBtn.innerText = "Saving...";
+    
+    try {
+        await fetch('/api/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        setTimeout(() => {
+            submitBtn.innerText = "Saved!";
+            setTimeout(() => {
+                submitBtn.innerText = ogText;
+                configModal.classList.add('hidden');
+            }, 1000);
+        }, 500);
+    } catch (e) {
+        console.error("Save config failed", e);
+        submitBtn.innerText = ogText;
+    }
+});
+
+// =============================================
+// RAG Modal & Citations Logic
+// =============================================
+const ragModal = document.getElementById('rag-modal');
+const closeRagBtn = document.getElementById('close-rag-btn');
+const modalRagContent = document.getElementById('modal-rag-content');
+
+window.openRagModal = function(index = null) {
+    if (!ragModal || !window.currentRagChunks) return;
+    
+    // Build content
+    let html = '';
+    window.currentRagChunks.forEach((chunk, i) => {
+        // If an index was provided by citation click, highlight it
+        const isHighlight = (index !== null && parseInt(index) === (i + 1));
+        html += `
+        <div style="padding: 12px; margin-bottom: 12px; border: 1px solid ${isHighlight ? 'var(--accent-blue)' : 'var(--border-subtle)'}; border-radius: var(--radius-sm); background: ${isHighlight ? 'rgba(37,99,235,0.05)' : 'var(--chat-bg)'}">
+            <h4 style="margin-bottom: 6px; font-size: 0.95rem;">Source [${i + 1}]</h4>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); white-space: pre-wrap;">${chunk.text}</p>
+        </div>`;
+    });
+    
+    if(html === '') html = '<p>No legal sources were retrieved for this query.</p>';
+    modalRagContent.innerHTML = html;
+    ragModal.classList.remove('hidden');
+};
+
+if(closeRagBtn) {
+    closeRagBtn.addEventListener('click', () => ragModal.classList.add('hidden'));
+}
+
+// Delegate listener for citation clicks
+chatHistory.addEventListener('click', (e) => {
+    if (e.target.closest('.citation')) {
+        const ref = e.target.closest('.citation').getAttribute('data-ref');
+        window.openRagModal(ref);
+    }
+});
+
+// =============================================
+// Helper: Auto-resize textarea
+// =============================================
+userInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+userInput.addEventListener('keydown', function(e) {
+    if(e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        chatForm.dispatchEvent(new Event('submit'));
+    }
+});
+
+// Preset Messages
 function sendPreset(text) {
     if (isProcessing) return;
     userInput.value = text;
     chatForm.dispatchEvent(new Event('submit'));
 }
-
-// =============================================
-// Mobile Panel Toggle
-// =============================================
-if (mobilePanelBtn) {
-    mobilePanelBtn.addEventListener('click', () => {
-        processPanel.classList.toggle('open');
-    });
-}
-
-// Close panel when clicking outside on mobile
-document.addEventListener('click', (e) => {
-    if (processPanel.classList.contains('open') &&
-        !processPanel.contains(e.target) &&
-        e.target !== mobilePanelBtn) {
-        processPanel.classList.remove('open');
-    }
-});
 
 // =============================================
 // Chat Form Handler
@@ -53,29 +222,32 @@ chatForm.addEventListener('submit', async (e) => {
     const message = userInput.value.trim();
     if (!message || isProcessing) return;
 
-    // Clear welcome hints after first message
-    const welcomeHints = document.querySelector('.welcome-hints');
-    if (welcomeHints) welcomeHints.remove();
+    // Clear welcome hints
+    const welcome = document.querySelector('.welcome-section');
+    if (welcome) welcome.style.display = 'none';
 
+    // Add user message
     addMessage(message, 'user');
     userInput.value = '';
+    userInput.style.height = 'auto';
     isProcessing = true;
 
-    // Update status
-    setStatus('processing', 'Processing...');
-
-    // Clear process log
-    processLog.innerHTML = '';
-    if (emptyState) emptyState.style.display = 'none';
-
-    // Reset route badge
-    routeBadgeContainer.style.display = 'none';
-
-    // Create assistant placeholder
-    const assistantMessageDiv = createMessageElement('system');
-    chatHistory.appendChild(assistantMessageDiv);
-    const bubble = assistantMessageDiv.querySelector('.bubble');
-    bubble.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+    // Add system placeholder
+    const assistantContainer = document.createElement('div');
+    assistantContainer.className = 'message system';
+    
+    // Create inline pipeline container inside the assistant bubble
+    const pipelineDiv = document.createElement('div');
+    pipelineDiv.className = 'pipeline-inline';
+    // We will keep the spinner loosely coupled so we can move it
+    pipelineDiv.innerHTML = `<div class="pipeline-step active" id="current-step"><span class="step-icon"><div class="spinner-icon"></div></span><span class="step-text">Initializing Process...</span></div>`;
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble markdown-body';
+    
+    assistantContainer.appendChild(pipelineDiv);
+    assistantContainer.appendChild(bubble);
+    chatHistory.appendChild(assistantContainer);
     scrollToBottom();
 
     try {
@@ -91,7 +263,6 @@ chatForm.addEventListener('submit', async (e) => {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let assistantText = '';
-        let currentRagChunks = [];
 
         while (true) {
             const { done, value } = await reader.read();
@@ -102,103 +273,128 @@ chatForm.addEventListener('submit', async (e) => {
 
             for (const line of lines) {
                 if (!line.trim()) continue;
-
                 try {
                     const data = JSON.parse(line);
 
-                    switch (data.type) {
-                        case 'meta':
-                            currentSessionId = data.sessionId;
-                            break;
+                    if (data.type === 'meta') {
+                        currentSessionId = data.sessionId;
+                    } 
+                    else if (data.type === 'step' || data.type === 'data') {
+                        // Mark previous step as done (replace spinner with check)
+                        const currentActive = pipelineDiv.querySelector('.pipeline-step.active');
+                        if (currentActive) {
+                            currentActive.classList.remove('active');
+                            const iconSpan = currentActive.querySelector('.step-icon');
+                            if (iconSpan) iconSpan.innerHTML = '✓';
+                        }
 
-                        case 'step':
-                            addProcessStep(data.content);
-                            break;
-
-                        case 'data':
-                            addProcessData(data.title, data.data);
-                            // Update route badge if this is routing data
-                            if (data.title === 'Routing Result') {
-                                updateRouteBadge(data.data.Route, data.data.Confidence);
-                            }
-                            break;
-
-                        case 'rag_context':
-                            currentRagChunks = data.chunks;
-                            window.currentRagChunks = data.chunks;
-                            addProcessRagContext(data.title, data.chunks);
-                            break;
-
-                        case 'result':
-                            if (assistantText === '') bubble.innerHTML = '';
-                            assistantText = data.content;
-                            bubble.innerHTML = formatResponse(assistantText);
-                            // If there were RAG chunks, add inline reference
-                            if (currentRagChunks.length > 0) {
-                                addInlineRagReference(bubble, currentRagChunks);
-                            }
-                            scrollToBottom();
-                            break;
-
-                        case 'error':
-                            addProcessStep(data.content, 'error');
-                            if (assistantText === '') {
-                                bubble.innerHTML = `<div class="error-message">${data.content}</div>`;
-                            }
-                            break;
+                        // Update Pipeline
+                        let statusText = data.content;
+                        if(data.type === 'data') {
+                           if(data.title.includes("Routing")) {
+                               statusText = `Routed via <strong>${data.data.Route}</strong> (${(data.data.Confidence*100).toFixed(0)}% confidence)`;
+                           } else if(data.title.includes("Triage")) {
+                               statusText = `Triage applied. Normalized Input: "${data.data["Normalized Text"]}"`;
+                           } else {
+                               statusText = `Data check: ${data.title}`;
+                           }
+                        }
+                        
+                        pipelineDiv.innerHTML += `<div class="pipeline-step active"><span class="step-icon"><div class="spinner-icon"></div></span><span class="step-text">${statusText}</span></div>`;
+                        scrollToBottom();
                     }
-                } catch (jsonError) {
-                    console.error('Error parsing SSE chunk:', jsonError);
+                    else if (data.type === 'rag_context') {
+                        window.currentRagChunks = data.chunks;
+                        // Mark previous active as done
+                        const currentActive = pipelineDiv.querySelector('.pipeline-step.active');
+                        if (currentActive) {
+                            currentActive.classList.remove('active');
+                            const iconSpan = currentActive.querySelector('.step-icon');
+                            if (iconSpan) iconSpan.innerHTML = '✓';
+                        }
+                        
+                        pipelineDiv.innerHTML += `<div class="pipeline-step" style="color:var(--accent-blue); cursor:pointer; text-decoration:underline;" onclick="window.openRagModal()">✓ <span class="step-text">Found ${data.chunks.length} legal sources. (Click to view)</span></div>`;
+                        // Re-add a loading step since generating is next
+                        pipelineDiv.innerHTML += `<div class="pipeline-step active"><span class="step-icon"><div class="spinner-icon"></div></span><span class="step-text">Reading context and generating...</span></div>`;
+                        scrollToBottom();
+                    }
+                    else if (data.type === 'result') {
+                        // Mark pipeline as complete
+                        const currentActive = pipelineDiv.querySelector('.pipeline-step.active');
+                        if (currentActive) {
+                            currentActive.classList.remove('active');
+                            const iconSpan = currentActive.querySelector('.step-icon');
+                            if (iconSpan) iconSpan.innerHTML = '✓';
+                            const textSpan = currentActive.querySelector('.step-text');
+                            if (textSpan) textSpan.innerHTML = 'Completed';
+                        }
+                        
+                        assistantText = data.content;
+                        bubble.innerHTML = renderMarkdown(assistantText);
+                        scrollToBottom();
+                    }
+                    else if (data.type === 'error') {
+                        pipelineDiv.innerHTML += `<div class="pipeline-step" style="color:red">✗ <span class="step-text">Error: ${data.content}</span></div>`;
+                        if(assistantText === '') bubble.innerHTML = `<div style="color:red">${data.content}</div>`;
+                    }
+                } catch (e) {
+                    console.error("SSE Parse Error", e);
                 }
             }
         }
-
-    } catch (error) {
-        console.error('Fetch error:', error);
-        addProcessStep('Network error — check your connection.', 'error');
-        bubble.innerHTML = '<div class="error-message">Failed to send message. Please check your connection.</div>';
+    } catch (e) {
+        pipelineDiv.innerHTML += `<div class="pipeline-step" style="color:red">✗ Critical Network Error.</div>`;
     } finally {
         isProcessing = false;
-        setStatus('ready', 'Ready');
     }
 });
 
 // =============================================
-// UI Helpers
+// Render Markdown with <think> Tag Extraction
 // =============================================
-function setStatus(state, text) {
-    statusIndicator.className = `status-indicator ${state === 'processing' ? 'processing' : ''}`;
-    statusIndicator.querySelector('.status-text').textContent = text;
-}
+function renderMarkdown(text) {
+    if(!text) return '';
+    let parsedText = text;
 
-function createMessageElement(sender) {
-    const div = document.createElement('div');
-    div.classList.add('message', sender);
+    // Fix <think> tags. Sometimes models use <think> \n content \n </think> or just <think>content</think>.
+    // Using a more robust regex that ignores case and matches universally.
+    parsedText = parsedText.replace(/<think>([\s\S]*?)<\/think>/gi, function(match, inner) {
+        return `<details class="reasoning-block"><summary>Thought Process</summary><div class="reasoning-content">${inner}</div></details>\n`;
+    });
+    
+    // Handle streaming case where <think> is present but not closed
+    if (parsedText.includes('<think>') && !parsedText.includes('</think>')) {
+        parsedText = parsedText.replace(/<think>/gi, '<details open class="reasoning-block"><summary>Thought Process</summary><div class="reasoning-content">\n');
+        parsedText += '\n</div></details>';
+    } 
 
-    const avatar = document.createElement('div');
-    avatar.classList.add('avatar');
+    // Convert Citations [1], [2], etc into clickable badges
+    parsedText = parsedText.replace(/\[(\d+)\]/g, '<sup class="citation" data-ref="$1" style="cursor:pointer; color:var(--accent-blue); font-weight:bold; padding: 0 2px;">[$1]</sup>');
 
-    if (sender === 'system') {
-        avatar.classList.add('system-avatar');
-        avatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-        </svg>`;
-    } else {
-        avatar.classList.add('user-avatar');
-        avatar.innerText = 'U';
-    }
-
-    const bubble = document.createElement('div');
-    bubble.classList.add('bubble');
-
-    div.appendChild(avatar);
-    div.appendChild(bubble);
-    return div;
+    // Configure marked for proper HTML support
+    const rawHtml = marked.parse(parsedText, { breaks: true, gfm: true });
+    
+    // Purify with exceptions for details, summary, and citations
+    return DOMPurify.sanitize(rawHtml, {
+        ADD_TAGS: ['details', 'summary', 'sup'],
+        ADD_ATTR: ['open', 'class', 'data-ref', 'style']
+    });
 }
 
 function addMessage(text, sender) {
-    const div = createMessageElement(sender);
-    div.querySelector('.bubble').innerText = text;
+    const div = document.createElement('div');
+    div.className = `message ${sender}`;
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    
+    // User messages are safe text
+    if(sender === 'user') {
+        bubble.innerText = text;
+    } else {
+        bubble.innerHTML = renderMarkdown(text);
+    }
+    
+    div.appendChild(bubble);
     chatHistory.appendChild(div);
     scrollToBottom();
 }
@@ -208,283 +404,4 @@ function scrollToBottom() {
     requestAnimationFrame(() => {
         container.scrollTop = container.scrollHeight;
     });
-}
-
-// =============================================
-// Route Badge
-// =============================================
-function updateRouteBadge(route, confidence) {
-    routeBadgeContainer.style.display = 'block';
-
-    // Clean class
-    routeBadgeValue.className = 'route-badge-value';
-
-    if (route === 'Casual-LLM') {
-        routeBadgeValue.classList.add('casual');
-        routeBadgeValue.textContent = '💬 Casual';
-    } else if (route === 'General-LLM') {
-        routeBadgeValue.classList.add('general');
-        routeBadgeValue.textContent = '📘 General';
-    } else if (route === 'Reasoning-LLM') {
-        routeBadgeValue.classList.add('reasoning');
-        routeBadgeValue.textContent = '⚖️ Reasoning';
-    } else {
-        routeBadgeValue.classList.add('error');
-        routeBadgeValue.textContent = route || 'Unknown';
-    }
-
-    if (confidence) {
-        routeBadgeConfidence.textContent = `${(confidence * 100).toFixed(0)}%`;
-    } else {
-        routeBadgeConfidence.textContent = '';
-    }
-}
-
-// =============================================
-// Process Log Steps
-// =============================================
-function addProcessStep(text, type = 'normal') {
-    const step = document.createElement('div');
-    step.classList.add('step-item');
-    if (type === 'error') step.classList.add('error');
-    if (text.includes('Casual')) step.classList.add('casual');
-    step.textContent = text;
-    processLog.appendChild(step);
-    scrollProcessLog();
-}
-
-function addProcessData(title, dataObj) {
-    const container = document.createElement('div');
-    container.classList.add('step-data');
-
-    const header = document.createElement('strong');
-    header.textContent = title;
-    container.appendChild(header);
-
-    for (const [key, value] of Object.entries(dataObj)) {
-        const row = document.createElement('div');
-        row.classList.add('data-row');
-
-        let displayValue = value;
-        if (typeof value === 'number' && key.toLowerCase().includes('confidence')) {
-            displayValue = `${(value * 100).toFixed(1)}%`;
-        }
-
-        row.innerHTML = `<span class="data-label">${key}</span><span class="data-value">${displayValue}</span>`;
-        container.appendChild(row);
-    }
-
-    const lastStep = processLog.lastElementChild;
-    if (lastStep && lastStep.classList.contains('step-item')) {
-        lastStep.appendChild(container);
-        lastStep.classList.add('active');
-    } else {
-        processLog.appendChild(container);
-    }
-    scrollProcessLog();
-}
-
-// =============================================
-// RAG Context Display (Sidebar)
-// =============================================
-function addProcessRagContext(title, chunks) {
-    const container = document.createElement('div');
-    container.classList.add('step-data', 'rag-container');
-
-    const header = document.createElement('strong');
-    header.textContent = `📚 ${title} (${chunks.length} sources)`;
-    container.appendChild(header);
-
-    window.currentRagChunks = chunks;
-
-    chunks.forEach((chunk, index) => {
-        const sourceCard = document.createElement('div');
-        sourceCard.classList.add('rag-source-card');
-
-        const scorePercent = Math.min((chunk.score || 0) * 100, 100);
-
-        let metaHtml = '';
-        if (chunk.metadata && Object.keys(chunk.metadata).length > 0) {
-            metaHtml = `
-                <div class="rag-metadata-tags">
-                    <span class="rag-tag jurisdiction-tag">${chunk.metadata.jurisdiction || 'Unknown'}</span>
-                    <span class="rag-tag category-tag">${chunk.metadata.category || 'Law'}</span>
-                </div>
-                <div class="rag-law-title">${escapeHtml(chunk.metadata.title || '')}</div>
-                <div class="rag-law-source">Source: ${escapeHtml(chunk.metadata.source_file || 'Unknown')}</div>
-            `;
-        }
-
-        const previewText = chunk.text ? chunk.text.substring(0, 150).replace(/\n/g, ' ') + '...' : '';
-
-        sourceCard.innerHTML = `
-            <div class="rag-source-header" onclick="this.parentElement.classList.toggle('expanded')">
-                <span class="rag-source-title">
-                    Source ${index + 1} — Score: ${(chunk.score || 0).toFixed(3)}
-                </span>
-                <span class="toggle-icon">▼</span>
-            </div>
-            <div class="rag-source-content">
-                ${metaHtml}
-                <div class="rag-score-bar"><div class="rag-score-fill" style="width: ${scorePercent}%"></div></div>
-                <div class="rag-text-preview" style="margin-top: 10px;">${escapeHtml(chunk.text || '')}</div>
-            </div>
-        `;
-        container.appendChild(sourceCard);
-    });
-
-    // View in modal button
-    const viewBtnDiv = document.createElement('div');
-    viewBtnDiv.classList.add('rag-source-card-actions');
-    viewBtnDiv.innerHTML = `<button class="rag-view-btn" onclick="openRagModal()">📖 View Full Legal Sources</button>`;
-    container.appendChild(viewBtnDiv);
-
-    const lastStep = processLog.lastElementChild;
-    if (lastStep && lastStep.classList.contains('step-item')) {
-        lastStep.appendChild(container);
-    } else {
-        processLog.appendChild(container);
-    }
-    scrollProcessLog();
-}
-
-// =============================================
-// Inline RAG Reference (in chat bubble)
-// =============================================
-function addInlineRagReference(bubble, chunks) {
-    const ragInline = document.createElement('div');
-    ragInline.classList.add('chat-rag-inline');
-
-    let chipsHtml = '';
-    chunks.slice(0, 3).forEach((chunk, i) => {
-        const title = chunk.metadata?.title || `Source ${i + 1}`;
-        const shortTitle = title.length > 35 ? title.substring(0, 35) + '...' : title;
-        chipsHtml += `<span class="chat-rag-chip" onclick="openRagModal()" title="${escapeHtml(title)}">📄 ${escapeHtml(shortTitle)}</span>`;
-    });
-
-    ragInline.innerHTML = `
-        <div class="chat-rag-header">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            </svg>
-            Legal Sources Referenced
-        </div>
-        <div>${chipsHtml}</div>
-    `;
-
-    bubble.appendChild(ragInline);
-}
-
-function scrollProcessLog() {
-    if (processLog.parentElement) {
-        processLog.parentElement.scrollTop = processLog.parentElement.scrollHeight;
-    }
-}
-
-// =============================================
-// Markdown Formatter
-// =============================================
-function formatResponse(text) {
-    if (!text) return '';
-
-    let html = escapeHtml(text);
-
-    // Headers
-    html = html.replace(/^### (.+)$/gm, '<h4 style="color:var(--accent-blue);margin:12px 0 6px;font-size:0.9rem;">$1</h4>');
-    html = html.replace(/^## (.+)$/gm, '<h3 style="color:var(--accent-blue);margin:14px 0 6px;font-size:1rem;">$1</h3>');
-    html = html.replace(/^# (.+)$/gm, '<h2 style="color:var(--accent-blue);margin:16px 0 8px;font-size:1.1rem;">$1</h2>');
-
-    // Bold + Italic
-    html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-    // Numbered lists
-    html = html.replace(/^(\d+)\.\s+(.+)$/gm, '<div style="padding-left:16px;margin:4px 0;"><span style="color:var(--accent-blue);font-weight:600;">$1.</span> $2</div>');
-
-    // Bullet lists
-    html = html.replace(/^[-•]\s+(.+)$/gm, '<div style="padding-left:16px;margin:3px 0;">• $1</div>');
-
-    // Line breaks
-    html = html.replace(/\n/g, '<br>');
-
-    // Clean up excessive breaks
-    html = html.replace(/(<br>){3,}/g, '<br><br>');
-
-    return html;
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// =============================================
-// RAG Modal
-// =============================================
-const ragModal = document.getElementById('rag-modal');
-const closeModalBtn = document.getElementById('close-modal-btn');
-const modalRagContent = document.getElementById('modal-rag-content');
-
-if (closeModalBtn) {
-    closeModalBtn.addEventListener('click', () => {
-        ragModal.classList.add('hidden');
-    });
-}
-
-if (ragModal) {
-    ragModal.addEventListener('click', (e) => {
-        if (e.target === ragModal) {
-            ragModal.classList.add('hidden');
-        }
-    });
-}
-
-// Close modal with Escape key
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && ragModal && !ragModal.classList.contains('hidden')) {
-        ragModal.classList.add('hidden');
-    }
-});
-
-function openRagModal() {
-    if (!window.currentRagChunks || window.currentRagChunks.length === 0) return;
-
-    modalRagContent.innerHTML = '';
-
-    window.currentRagChunks.forEach((chunk, i) => {
-        const div = document.createElement('div');
-        div.classList.add('modal-rag-item');
-
-        const scorePercent = Math.min((chunk.score || 0) * 100, 100);
-
-        let metaHtml = '';
-        if (chunk.metadata && Object.keys(chunk.metadata).length > 0) {
-            metaHtml = `
-                <div class="modal-metadata-header">
-                    <div class="rag-metadata-tags">
-                        <span class="rag-tag jurisdiction-tag">${escapeHtml(chunk.metadata.jurisdiction || 'Unknown')}</span>
-                        <span class="rag-tag category-tag">${escapeHtml(chunk.metadata.category || 'Law')}</span>
-                    </div>
-                    <div class="rag-law-title">${escapeHtml(chunk.metadata.title || 'Untitled')}</div>
-                    <div class="rag-law-source">Source: ${escapeHtml(chunk.metadata.source_file || 'Unknown')}</div>
-                    <div class="rag-score-bar" style="margin-top:8px;"><div class="rag-score-fill" style="width: ${scorePercent}%"></div></div>
-                </div>
-            `;
-        }
-
-        div.innerHTML = `
-            <div class="modal-rag-score">
-                <span>Source ${i + 1}</span>
-                <span class="score-value">Similarity: ${(chunk.score || 0).toFixed(4)}</span>
-            </div>
-            ${metaHtml}
-            <div class="modal-rag-text">${escapeHtml(chunk.text || '')}</div>
-        `;
-        modalRagContent.appendChild(div);
-    });
-
-    ragModal.classList.remove('hidden');
 }
