@@ -27,13 +27,13 @@ class FrameworkConfig:
     _TRIAGE_TEMP = float(os.getenv("TRIAGE_TEMP", "0.6"))
     _TRIAGE_MAX_TOKENS = int(os.getenv("TRIAGE_MAX_TOKENS", "2000"))
     _TRIAGE_USE_SYSTEM = os.getenv("TRIAGE_USE_SYSTEM", "True").lower() == "true"
-    _TRIAGE_REASONING = os.getenv("TRIAGE_REASONING", "True").lower() == "true"
+    _TRIAGE_REASONING = os.getenv("TRIAGE_REASONING", "False").lower() == "true"
 
     ## @const_ Semantic Router Configuration
-    _ROUTER_MODEL = os.getenv("ROUTER_MODEL", "google/gemma-3-12b-it:free")
-    _ROUTER_TEMP = float(os.getenv("ROUTER_TEMP", "0.0"))
-    _ROUTER_MAX_TOKENS = int(os.getenv("ROUTER_MAX_TOKENS", "200"))
-    _ROUTER_USE_SYSTEM = os.getenv("ROUTER_USE_SYSTEM", "False").lower() == "true"
+    _ROUTER_MODEL = os.getenv("ROUTER_MODEL", "qwen/qwen-turbo")
+    _ROUTER_TEMP = float(os.getenv("ROUTER_TEMP", "0.1"))
+    _ROUTER_MAX_TOKENS = int(os.getenv("ROUTER_MAX_TOKENS", "250"))
+    _ROUTER_USE_SYSTEM = os.getenv("ROUTER_USE_SYSTEM", "TRUE").lower() == "true"
     _ROUTER_REASONING = os.getenv("ROUTER_REASONING", "False").lower() == "true"
 
     ## @const_ Fallbacks (Legacy/General)
