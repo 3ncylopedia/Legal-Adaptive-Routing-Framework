@@ -23,14 +23,13 @@ class FrameworkConfig:
     _API_KEY = os.getenv("OPENROUTER_API_KEY", "")
     
     ## @const_ Triage Module Configuration (Linguistic Normalizer)
-    _TRIAGE_MODEL = os.getenv("TRIAGE_MODEL", "qwen/qwen3-4b:free")
+    _TRIAGE_MODEL = os.getenv("TRIAGE_MODEL", "qwen/qwen-turbo")
     _TRIAGE_TEMP = float(os.getenv("TRIAGE_TEMP", "0.6"))
-    _TRIAGE_MAX_TOKENS = int(os.getenv("TRIAGE_MAX_TOKENS", "1500"))
+    _TRIAGE_MAX_TOKENS = int(os.getenv("TRIAGE_MAX_TOKENS", "2000"))
     _TRIAGE_USE_SYSTEM = os.getenv("TRIAGE_USE_SYSTEM", "True").lower() == "true"
     _TRIAGE_REASONING = os.getenv("TRIAGE_REASONING", "True").lower() == "true"
 
     ## @const_ Semantic Router Configuration
-    # Switching strictly to Gemma 4B Instruct as requested/available, or fallback.
     _ROUTER_MODEL = os.getenv("ROUTER_MODEL", "google/gemma-3-12b-it:free")
     _ROUTER_TEMP = float(os.getenv("ROUTER_TEMP", "0.0"))
     _ROUTER_MAX_TOKENS = int(os.getenv("ROUTER_MAX_TOKENS", "200"))
@@ -76,10 +75,10 @@ class FrameworkConfig:
                 )
 
     ## @const_ General LLM Configuration (Information)
-    _GENERAL_MODEL = os.getenv("GENERAL_MODEL", "google/gemma-3-12b-it:free")
+    _GENERAL_MODEL = os.getenv("GENERAL_MODEL", "qwen/qwen3-next-80b-a3b-instruct:free")
     _GENERAL_TEMP = float(os.getenv("GENERAL_TEMP", "0.5"))
-    _GENERAL_MAX_TOKENS = int(os.getenv("GENERAL_MAX_TOKENS", "2000"))
-    _GENERAL_USE_SYSTEM = os.getenv("GENERAL_USE_SYSTEM", "False").lower() == "true"
+    _GENERAL_MAX_TOKENS = int(os.getenv("GENERAL_MAX_TOKENS", "2500"))
+    _GENERAL_USE_SYSTEM = os.getenv("GENERAL_USE_SYSTEM", "True").lower() == "true"
     _GENERAL_REASONING = os.getenv("GENERAL_REASONING", "False").lower() == "true"
     _GENERAL_INSTRUCTIONS = (
         "ROLE: Legal Information Assistant\n"
@@ -103,10 +102,10 @@ class FrameworkConfig:
     )
 
     ## @const_ Reasoning LLM Configuration (Advice/Scenario)
-    _REASONING_MODEL = os.getenv("REASONING_MODEL", "google/gemma-3-12b-it:free") # Fallback to working model
+    _REASONING_MODEL = os.getenv("REASONING_MODEL", "deepseek/deepseek-chat-v3.1") # Fallback to working model
     _REASONING_TEMP = float(os.getenv("REASONING_TEMP", "0.7"))
     _REASONING_MAX_TOKENS = int(os.getenv("REASONING_MAX_TOKENS", "3000"))
-    _REASONING_USE_SYSTEM = os.getenv("REASONING_USE_SYSTEM", "False").lower() == "true"
+    _REASONING_USE_SYSTEM = os.getenv("REASONING_USE_SYSTEM", "True").lower() == "true"
     _REASONING_REASONING = os.getenv("REASONING_REASONING", "True").lower() == "true"
     _REASONING_INSTRUCTIONS = (
         "ROLE: Legal AI Assistant (Philippine & HK Labor Law Focus)\n\n"
@@ -141,7 +140,7 @@ class FrameworkConfig:
     )
 
     ## @const_ Casual LLM Configuration (Greetings, Thanks, Small Talk)
-    _CASUAL_MODEL = os.getenv("CASUAL_MODEL", "google/gemma-3-12b-it:free")
+    _CASUAL_MODEL = os.getenv("CASUAL_MODEL", "qwen/qwen-turbo")
     _CASUAL_TEMP = float(os.getenv("CASUAL_TEMP", "0.8"))
     _CASUAL_MAX_TOKENS = int(os.getenv("CASUAL_MAX_TOKENS", "200"))
     _CASUAL_USE_SYSTEM = os.getenv("CASUAL_USE_SYSTEM", "True").lower() == "true"

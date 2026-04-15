@@ -197,45 +197,45 @@ def _input_int_(prompt, current):
 _config = {}
 
 def _load_config_from_env_():
-    """Load all configuration values from .env with defaults from FrameworkConfig."""
+    """Load all configuration values from .env with defaults sourced from FrameworkConfig."""
     load_dotenv()
     return {
         # API
-        "api_key":              os.getenv("OPENROUTER_API_KEY", ""),
+        "api_key":              FrameworkConfig._API_KEY,
         # Triage Module
-        "triage_model":         os.getenv("TRIAGE_MODEL", "z-ai/glm-4.5-air:free"),
-        "triage_temp":          float(os.getenv("TRIAGE_TEMP", "0.6")),
-        "triage_max_tokens":    int(os.getenv("TRIAGE_MAX_TOKENS", "1500")),
-        "triage_use_system":    os.getenv("TRIAGE_USE_SYSTEM", "True").lower() == "true",
-        "triage_reasoning":     os.getenv("TRIAGE_REASONING", "True").lower() == "true",
+        "triage_model":         FrameworkConfig._TRIAGE_MODEL,
+        "triage_temp":          FrameworkConfig._TRIAGE_TEMP,
+        "triage_max_tokens":    FrameworkConfig._TRIAGE_MAX_TOKENS,
+        "triage_use_system":    FrameworkConfig._TRIAGE_USE_SYSTEM,
+        "triage_reasoning":     FrameworkConfig._TRIAGE_REASONING,
         # Router Module
-        "router_model":         os.getenv("ROUTER_MODEL", "z-ai/glm-4.5-air:free"),
-        "router_temp":          float(os.getenv("ROUTER_TEMP", "0.0")),
-        "router_max_tokens":    int(os.getenv("ROUTER_MAX_TOKENS", "200")),
-        "router_use_system":    os.getenv("ROUTER_USE_SYSTEM", "False").lower() == "true",
-        "router_reasoning":     os.getenv("ROUTER_REASONING", "False").lower() == "true",
+        "router_model":         FrameworkConfig._ROUTER_MODEL,
+        "router_temp":          FrameworkConfig._ROUTER_TEMP,
+        "router_max_tokens":    FrameworkConfig._ROUTER_MAX_TOKENS,
+        "router_use_system":    FrameworkConfig._ROUTER_USE_SYSTEM,
+        "router_reasoning":     FrameworkConfig._ROUTER_REASONING,
         # General LLM
-        "general_model":        os.getenv("GENERAL_MODEL", "z-ai/glm-4.5-air:free"),
-        "general_temp":         float(os.getenv("GENERAL_TEMP", "0.5")),
-        "general_max_tokens":   int(os.getenv("GENERAL_MAX_TOKENS", "2000")),
-        "general_use_system":   os.getenv("GENERAL_USE_SYSTEM", "False").lower() == "true",
-        "general_reasoning":    os.getenv("GENERAL_REASONING", "False").lower() == "true",
+        "general_model":        FrameworkConfig._GENERAL_MODEL,
+        "general_temp":         FrameworkConfig._GENERAL_TEMP,
+        "general_max_tokens":   FrameworkConfig._GENERAL_MAX_TOKENS,
+        "general_use_system":   FrameworkConfig._GENERAL_USE_SYSTEM,
+        "general_reasoning":    FrameworkConfig._GENERAL_REASONING,
         # Reasoning LLM
-        "reasoning_model":      os.getenv("REASONING_MODEL", "z-ai/glm-4.5-air:free"),
-        "reasoning_temp":       float(os.getenv("REASONING_TEMP", "0.7")),
-        "reasoning_max_tokens": int(os.getenv("REASONING_MAX_TOKENS", "3000")),
-        "reasoning_use_system": os.getenv("REASONING_USE_SYSTEM", "False").lower() == "true",
-        "reasoning_reasoning":  os.getenv("REASONING_REASONING", "True").lower() == "true",
+        "reasoning_model":      FrameworkConfig._REASONING_MODEL,
+        "reasoning_temp":       FrameworkConfig._REASONING_TEMP,
+        "reasoning_max_tokens": FrameworkConfig._REASONING_MAX_TOKENS,
+        "reasoning_use_system": FrameworkConfig._REASONING_USE_SYSTEM,
+        "reasoning_reasoning":  FrameworkConfig._REASONING_REASONING,
         # Casual LLM
-        "casual_model":         os.getenv("CASUAL_MODEL", "z-ai/glm-4.5-air:free"),
-        "casual_temp":          float(os.getenv("CASUAL_TEMP", "0.8")),
-        "casual_max_tokens":    int(os.getenv("CASUAL_MAX_TOKENS", "200")),
-        "casual_use_system":    os.getenv("CASUAL_USE_SYSTEM", "True").lower() == "true",
-        "casual_reasoning":     os.getenv("CASUAL_REASONING", "False").lower() == "true",
+        "casual_model":         FrameworkConfig._CASUAL_MODEL,
+        "casual_temp":          FrameworkConfig._CASUAL_TEMP,
+        "casual_max_tokens":    FrameworkConfig._CASUAL_MAX_TOKENS,
+        "casual_use_system":    FrameworkConfig._CASUAL_USE_SYSTEM,
+        "casual_reasoning":     FrameworkConfig._CASUAL_REASONING,
         # Network
-        "request_timeout":      int(os.getenv("REQUEST_TIMEOUT", "30")),
-        "retry_count":          int(os.getenv("RETRY_COUNT", "2")),
-        "retry_backoff":        float(os.getenv("RETRY_BACKOFF", "1.0")),
+        "request_timeout":      FrameworkConfig._REQUEST_TIMEOUT,
+        "retry_count":          FrameworkConfig._RETRY_COUNT,
+        "retry_backoff":        FrameworkConfig._RETRY_BACKOFF,
     }
 
 def _print_module_config_(name, cfg, prefix):

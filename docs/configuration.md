@@ -17,6 +17,7 @@ The `FrameworkConfig` class is the **centralized configuration hub** for every m
 - [Reasoning LLM Settings](#reasoning-llm-settings)
 - [Casual LLM Settings](#casual-llm-settings)
 - [Legal Retrieval (RAG) Settings](#legal-retrieval-rag-settings)
+- [Network Resilience Settings](#network-resilience-settings)
 - [Fallback / Legacy Settings](#fallback--legacy-settings)
 - [Runtime Configuration Override](#runtime-configuration-override)
 - [Customization Patterns](#customization-patterns)
@@ -64,9 +65,9 @@ Controls the **Linguistic Normalizer** — the LLM that translates Tagalog/Tagli
 
 | Attribute | Env Variable | Type | Default | Description |
 |:---|:---|:---|:---|:---|
-| `_TRIAGE_MODEL` | `TRIAGE_MODEL` | `str` | `"qwen/qwen3-4b:free"` | LLM model for text normalization |
+| `_TRIAGE_MODEL` | `TRIAGE_MODEL` | `str` | `"qwen/qwen-turbo"` | LLM model for text normalization |
 | `_TRIAGE_TEMP` | `TRIAGE_TEMP` | `float` | `0.6` | Creativity level (0.0 = deterministic, 2.0 = max creative) |
-| `_TRIAGE_MAX_TOKENS` | `TRIAGE_MAX_TOKENS` | `int` | `1500` | Maximum response length in tokens |
+| `_TRIAGE_MAX_TOKENS` | `TRIAGE_MAX_TOKENS` | `int` | `2000` | Maximum response length in tokens |
 | `_TRIAGE_USE_SYSTEM` | `TRIAGE_USE_SYSTEM` | `bool` | `True` | Whether to use the `system` role in API requests |
 | `_TRIAGE_REASONING` | `TRIAGE_REASONING` | `bool` | `True` | Whether to include chain-of-thought reasoning |
 
@@ -102,10 +103,10 @@ Controls the **General-LLM** — used for standard legal information queries (de
 
 | Attribute | Env Variable | Type | Default | Description |
 |:---|:---|:---|:---|:---|
-| `_GENERAL_MODEL` | `GENERAL_MODEL` | `str` | `"google/gemma-3-12b-it:free"` | LLM model for general responses |
+| `_GENERAL_MODEL` | `GENERAL_MODEL` | `str` | `"qwen/qwen3-next-80b-a3b-instruct:free"` | LLM model for general responses |
 | `_GENERAL_TEMP` | `GENERAL_TEMP` | `float` | `0.5` | Temperature for response variety |
-| `_GENERAL_MAX_TOKENS` | `GENERAL_MAX_TOKENS` | `int` | `1000` | Max response length |
-| `_GENERAL_USE_SYSTEM` | `GENERAL_USE_SYSTEM` | `bool` | `False` | System role support |
+| `_GENERAL_MAX_TOKENS` | `GENERAL_MAX_TOKENS` | `int` | `2500` | Max response length |
+| `_GENERAL_USE_SYSTEM` | `GENERAL_USE_SYSTEM` | `bool` | `True` | System role support |
 | `_GENERAL_REASONING` | `GENERAL_REASONING` | `bool` | `False` | Include reasoning output |
 | `_GENERAL_INSTRUCTIONS` | — | `str` | *(see below)* | System prompt for the General-LLM |
 
@@ -131,10 +132,10 @@ Controls the **Reasoning-LLM** — used for complex legal analysis, scenario-bas
 
 | Attribute | Env Variable | Type | Default | Description |
 |:---|:---|:---|:---|:---|
-| `_REASONING_MODEL` | `REASONING_MODEL` | `str` | `"google/gemma-3-12b-it:free"` | LLM model for reasoning tasks |
+| `_REASONING_MODEL` | `REASONING_MODEL` | `str` | `"deepseek/deepseek-chat-v3.1"` | LLM model for reasoning tasks |
 | `_REASONING_TEMP` | `REASONING_TEMP` | `float` | `0.7` | Higher temperature for nuanced analysis |
-| `_REASONING_MAX_TOKENS` | `REASONING_MAX_TOKENS` | `int` | `2000` | Extended token limit for detailed analysis |
-| `_REASONING_USE_SYSTEM` | `REASONING_USE_SYSTEM` | `bool` | `False` | System role support |
+| `_REASONING_MAX_TOKENS` | `REASONING_MAX_TOKENS` | `int` | `3000` | Extended token limit for detailed analysis |
+| `_REASONING_USE_SYSTEM` | `REASONING_USE_SYSTEM` | `bool` | `True` | System role support |
 | `_REASONING_REASONING` | `REASONING_REASONING` | `bool` | `True` | Include chain-of-thought reasoning |
 | `_REASONING_INSTRUCTIONS` | — | `str` | *(see below)* | System prompt for the Reasoning-LLM |
 
@@ -151,7 +152,7 @@ Controls the **Casual-LLM** engine — used for greetings, expressions of gratit
 
 | Attribute | Env Variable | Type | Default | Description |
 |:---|:---|:---|:---|:---|
-| `_CASUAL_MODEL` | `CASUAL_MODEL` | `str` | `"google/gemma-3-12b-it:free"` | LLM for small-talk responses |
+| `_CASUAL_MODEL` | `CASUAL_MODEL` | `str` | `"qwen/qwen-turbo"` | LLM for small-talk responses |
 | `_CASUAL_TEMP` | `CASUAL_TEMP` | `float` | `0.8` | Higher temperature for natural, varied replies |
 | `_CASUAL_MAX_TOKENS` | `CASUAL_MAX_TOKENS` | `int` | `200` | Short responses — 1–3 sentences max |
 | `_CASUAL_USE_SYSTEM` | `CASUAL_USE_SYSTEM` | `bool` | `True` | System role support |
@@ -176,6 +177,7 @@ Controls the **EmbeddingManager** and **LegalRetriever** — the document embedd
 | `_RETRIEVAL_TOP_K` | `RETRIEVAL_TOP_K` | `int` | `5` | Number of nearest chunks to retrieve |
 | `_RETRIEVAL_CHUNK_SIZE` | `RETRIEVAL_CHUNK_SIZE` | `int` | `5000` | Maximum characters per document chunk |
 | `_RETRIEVAL_CHUNK_OVERLAP` | `RETRIEVAL_CHUNK_OVERLAP` | `int` | `200` | Character overlap between adjacent chunks |
+| `_RETRIEVAL_SCORE_THRESHOLD` | `RETRIEVAL_SCORE_THRESHOLD` | `float` | `0.0` | Minimum cosine similarity score to include a chunk result |
 | `_RETRIEVAL_INDEX_PATH` | `RETRIEVAL_INDEX_PATH` | `str` | `None` | Path to a pre-built FAISS `.faiss` file |
 | `_RETRIEVAL_CHUNKS_PATH` | `RETRIEVAL_CHUNKS_PATH` | `str` | `None` | Path to a pre-built chunks `.json` file |
 
@@ -196,6 +198,30 @@ RETRIEVAL_CHUNK_SIZE=1024
 RETRIEVAL_CHUNK_OVERLAP=128
 RETRIEVAL_TOP_K=10
 ```
+
+---
+
+## Network Resilience Settings
+
+Controls HTTP request reliability — timeouts and retry behavior for all API calls.
+
+| Attribute | Env Variable | Type | Default | Description |
+|:---|:---|:---|:---|:---|
+| `_REQUEST_TIMEOUT` | `REQUEST_TIMEOUT` | `int` | `30` | Seconds to wait before timing out an LLM API request |
+| `_EMBEDDING_TIMEOUT` | `EMBEDDING_TIMEOUT` | `int` | `60` | Seconds to wait before timing out an embedding request |
+| `_RETRY_COUNT` | `RETRY_COUNT` | `int` | `2` | Number of retry attempts on network failure |
+| `_RETRY_BACKOFF` | `RETRY_BACKOFF` | `float` | `1.0` | Base backoff time (seconds) between retries |
+
+**Customization example:**
+
+```env
+REQUEST_TIMEOUT=60
+EMBEDDING_TIMEOUT=120
+RETRY_COUNT=3
+RETRY_BACKOFF=2.0
+```
+
+> **Note**: Embedding operations are given a longer default timeout (`60s`) than standard LLM requests (`30s`) because local model loading on first use can take additional time.
 
 ---
 
@@ -239,7 +265,7 @@ FrameworkConfig._update_settings_(
 **How it works:**
 1. Each `key` in `kwargs` is uppercased and prefixed with `_` (e.g., `triage_model` → `_TRIAGE_MODEL`)
 2. If the resulting attribute name exists on `FrameworkConfig`, the value is updated
-3. Non-existent keys are silently ignored
+3. **Unknown keys raise a `ConfigurationError`** — this prevents silent misconfiguration from typos or unsupported parameters
 
 ### Direct Attribute Assignment
 
