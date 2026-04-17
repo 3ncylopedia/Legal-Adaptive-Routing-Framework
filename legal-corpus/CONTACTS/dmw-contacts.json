@@ -1,0 +1,114 @@
+{
+  "department_metadata": {
+    "agency": "Department of Migrant Workers (DMW)",
+    "headquarters": "Blas F. Ople Building, Ortigas Avenue cor. EDSA, Mandaluyong City 1550",
+    "last_updated_central": "January 30, 2026",
+    "last_updated_mwo": "February 25, 2026",
+    "general_hotlines": ["8722-1182", "0722-1155", "122-1153", "0724-3645"]
+  },
+  "central_leadership_and_bureaus": {
+    "executive": {
+      "secretary": {
+        "name": "Atty. Hans Leo J. Cacdac",
+        "email": "osec@dmw.gov.ph",
+        "telephone": "8722-11-44"
+      },
+      "undersecretaries": [
+        {
+          "portfolio": "Foreign Employment and Welfare Services (Asia-Pacific, Americas, Europe)",
+          "name": "Atty. Felicitas Q. Bay",
+          "contact": "felicitas.bay@dmw.gov.ph"
+        },
+        {
+          "portfolio": "Middle East and African Affairs",
+          "name": "Atty. Jainal T. Rasul, Jr.",
+          "contact": "ousec.jrasul@dmw.gov.ph"
+        }
+      ]
+    },
+    "specialized_services": {
+      "legal_service": {
+        "director": "Atty. Janine T. Tutanes",
+        "divisions": ["Legal Division A (legal.A@dmw.gov.ph)", "Legal Division B (legal.B@dmw.gov.ph)"]
+      },
+      "licensing_and_regulations": {
+        "director": "Atty. Liza C. Alcera",
+        "email": "director_licensing@dmw.gov.ph"
+      },
+      "migrant_workers_protection_bureau": {
+        "director": "Atty. Romelson E. Abbang",
+        "email": "mwpb@dmw.gov.ph"
+      }
+    }
+  },
+  "global_mwo_network": {
+    "asia_pacific": [
+      {
+        "post": "Hong Kong",
+        "head": "Cesar L. Chavez, Jr.",
+        "jurisdiction": "Hong Kong SAR",
+        "email": "mwo_hongkong@dmw.gov.ph"
+      },
+      {
+        "post": "Singapore",
+        "head": "Haney Lynn G. Siclot",
+        "concurrent_jurisdiction": ["Indonesia", "Cambodia"],
+        "email": "mwo_singapore@dmw.gov.ph"
+      }
+    ],
+    "middle_east_and_africa": [
+      {
+        "post": "Dubai, UAE",
+        "head": "John Rio A. Bautista",
+        "jurisdiction": ["Dubai", "Sharjah"],
+        "concurrent": ["Ajman", "Ras Al Khaimah", "Fujairah", "Umm Al-Quwain"],
+        "hotline": "+971506526626"
+      },
+      {
+        "post": "Riyadh, KSA",
+        "head": "Dominador A. Salanga",
+        "jurisdiction": "Riyadh/Central Region",
+        "hotline": "+966502850944"
+      },
+      {
+        "post": "Morocco",
+        "head": "William E. Calina",
+        "concurrent": ["Libya", "Algeria", "Chad", "Mali", "Niger", "Mauritania", "Tunisia"],
+        "email": "polo.rabat2021@gmail.com"
+      }
+    ],
+    "americas": [
+      {
+        "post": "Washington DC",
+        "head": "Saul T. de Vries",
+        "oversight": ["Mexico", "Costa Rica", "Brazil", "Argentina", "Chile", "Colombia"],
+        "email": "mwo_washingtondc@dmw.gov.ph"
+      }
+    ],
+    "europe": [
+      {
+        "post": "London",
+        "head": "Ma. Nena G. German",
+        "concurrent": ["Norway", "Denmark", "Finland", "Sweden", "Iceland", "Greenland"],
+        "email": "mwo_london@dmw.gov.ph"
+      }
+    ]
+  },
+  "philippine_regional_offices": {
+    "ncr": {
+      "director": "Atty. Falconi V. Millar",
+      "email": "ncr@dmw.gov.ph"
+    },
+    "car": {
+      "location": "Baguio City",
+      "director": "Atty. Cheryl L. Daytec-Yangot",
+      "hotline": "0908-865-0695",
+      "email": "baguio@dmw.gov.ph"
+    },
+    "region_xi": {
+      "location": "Davao City",
+      "director": "Maria Carolina B. Agdamag",
+      "email": "davao@dmw.gov.ph"
+    }
+  }
+}

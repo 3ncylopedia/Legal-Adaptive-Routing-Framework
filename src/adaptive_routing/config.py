@@ -7,6 +7,10 @@
 
 import os
 import logging
+from dotenv import load_dotenv
+
+# Ensure environment variables are loaded before configuration is parsed
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -164,10 +168,10 @@ class FrameworkConfig:
     )
 
     ## @const_ Legal Retrieval (RAG) Module Configuration
-    _RETRIEVAL_MODEL = os.getenv("RETRIEVAL_MODEL", "sentence-transformers/all-minilm-l6-v2")
+    _RETRIEVAL_MODEL = os.getenv("RETRIEVAL_MODEL", "sentence-transformers/all-minilm-l12-v2")
     _RETRIEVAL_TOP_K = int(os.getenv("RETRIEVAL_TOP_K", "5"))
     _RETRIEVAL_CHUNK_SIZE = int(os.getenv("RETRIEVAL_CHUNK_SIZE", "5000"))
-    _RETRIEVAL_CHUNK_OVERLAP = int(os.getenv("RETRIEVAL_CHUNK_OVERLAP", "200"))
+    _RETRIEVAL_CHUNK_OVERLAP = int(os.getenv("RETRIEVAL_CHUNK_OVERLAP", "300"))
     _RETRIEVAL_SCORE_THRESHOLD = float(os.getenv("RETRIEVAL_SCORE_THRESHOLD", "0.0"))
     
     ## @const_ Pre-built Index Paths (Optional)

@@ -32,6 +32,9 @@ Create a `.env` file at the project root:
 OPENROUTER_API_KEY=sk-or-v1-your-api-key-here
 ```
 
+> [!NOTE]
+> The framework automatically loads the `.env` file from the project root upon importing `FrameworkConfig`. You do not need to manually call `load_dotenv()` in your scripts if you are using the public module exports.
+
 This is the **only required** setting. All other parameters use sensible defaults out of the box.
 
 ---

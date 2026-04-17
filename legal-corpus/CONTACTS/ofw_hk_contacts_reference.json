@@ -1,0 +1,55 @@
+{
+  "title": "Philippine Government Offices for OFWs in Hong Kong",
+  "last_verified": "2026-04-10",
+  "emergency_numbers": {
+    "note": "If you are in danger, being abused, or need urgent help:",
+    "pcg_24_7_hotline": "+852-9155-4023",
+    "mwo_emergency": "+852-5529-1880",
+    "owwa_emergency": "+852-6345-9324"
+  },
+  "offices": [
+    {
+      "name": "Philippine Consulate General (PCG)",
+      "agency": "DFA",
+      "address": "14/F United Centre, 95 Queensway, Admiralty, Hong Kong",
+      "telephone": ["+852-2823-8500", "+852-2823-8501"],
+      "emergency_hotline": "+852-9155-4023 (24/7)",
+      "email": "hongkong.pcg@dfa.gov.ph",
+      "website": "https://hongkongpcg.dfa.gov.ph",
+      "office_hours": "Sunday to Thursday, 9:00 AM – 4:00 PM",
+      "for": "Passport, civil documents, authentication, emergency assistance"
+    },
+    {
+      "name": "Assistance to Nationals (ATN) Section",
+      "agency": "DFA — under PCG",
+      "address": "14/F United Centre, 95 Queensway, Admiralty, Hong Kong",
+      "telephone": ["+852-2823-8512", "+852-2823-8513"],
+      "email": "hongkong.pcg@dfa.gov.ph",
+      "website": "https://hongkongpcg.dfa.gov.ph",
+      "office_hours": "Sunday to Thursday, 9:00 AM – 4:00 PM",
+      "for": "Police cases, detention, immigration assistance"
+    },
+    {
+      "name": "Migrant Workers Office (MWO)",
+      "agency": "DMW (formerly POLO)",
+      "address": "Office No. 2, 29/F United Centre, 95 Queensway, Admiralty, Hong Kong",
+      "telephone": ["+852-2866-0640", "+852-2864-2445"],
+      "emergency_hotline": "+852-5529-1880",
+      "email": "mwo_hongkong@dmw.gov.ph",
+      "website": "https://mwohk-ph.com",
+      "office_hours": "Sunday to Thursday, 9:00 AM – 4:00 PM",
+      "for": "OEC, employment contracts, labor disputes, repatriation, counselling"
+    },
+    {
+      "name": "Overseas Workers Welfare Administration (OWWA)",
+      "agency": "OWWA",
+      "address": "Office No. 2, 29/F United Centre, 95 Queensway, Admiralty, Hong Kong",
+      "telephone": ["+852-3483-0600"],
+      "emergency_hotline": "+852-6345-9324",
+      "email": "hongkong@owwa.gov.ph",
+      "website": "https://www.owwa.gov.ph",
+      "office_hours": "Sunday to Thursday, 9:00 AM – 4:00 PM",
+      "for": "OWWA membership, welfare assistance, shelter, training, financial aid"
+    }
+  ]
+}

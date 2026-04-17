@@ -12,6 +12,7 @@ from src.adaptive_routing.core.engine import LLMRequestEngine
 import numpy as np
 import faiss
 import logging
+from rank_bm25 import BM25Okapi
 from src.adaptive_routing.config import FrameworkConfig
 from src.adaptive_routing.core.exceptions import (
     AuthenticationError,
@@ -56,6 +57,7 @@ class EmbeddingManager:
         self._index = None
         self._chunks = []
         self._dimension = None
+        self._bm25 = None
 
     # ------------------------------------------------------------------
     # Chunking (Sentence-Boundary Aware)
@@ -155,13 +157,24 @@ class EmbeddingManager:
                 text = doc
                 meta = {}
                 
+            # PARENT-CHILD INDEXING: Store full text as parent context
+            meta_copy = meta.copy()
+            meta_copy["parent_context"] = text
+                
             if bypass_chunking:
                 chunks = [text]
             else:
+                # Use a tighter chunk size for children to improve vector match precision
+                original_size = self._chunk_size
+                original_overlap = self._chunk_overlap
+                self._chunk_size = min(self._chunk_size, 1500)
+                self._chunk_overlap = min(self._chunk_overlap, 150)
                 chunks = self._chunk_text_(text)
+                self._chunk_size = original_size
+                self._chunk_overlap = original_overlap
                 
             all_chunks.extend(chunks)
-            chunk_metadatas.extend([meta] * len(chunks))
+            chunk_metadatas.extend([meta_copy] * len(chunks))
 
         if not all_chunks:
             raise InvalidInputError("No chunks generated from provided documents.")
@@ -185,49 +198,98 @@ class EmbeddingManager:
 
         self._index.add(embeddings)
         self._chunks.extend([{"text": c, "metadata": m} for c, m in zip(all_chunks, chunk_metadatas)])
+        
+        # Initialize Hybrid BM25
+        self._init_bm25_()
+        
         logger.info(f"Index now contains {self._index.ntotal} vectors.")
+
+    def _init_bm25_(self):
+        """Initializes the BM25 model based on the current chunks."""
+        if not self._chunks:
+            self._bm25 = None
+            return
+            
+        tokenized_corpus = []
+        for chunk_data in self._chunks:
+            if isinstance(chunk_data, dict):
+                text = chunk_data.get("text", "")
+            else:
+                text = str(chunk_data)
+            tokenized_corpus.append(text.lower().split(" "))
+            
+        self._bm25 = BM25Okapi(tokenized_corpus)
 
     def _search_(self, query: str, top_k: int = None) -> list:
         """
         @func_ _search_ (@params query, top_k)
         @params query : (str) The search query.
         @params top_k : (int) Number of results to return (defaults to config).
-        @return_ list[dict] : List of {chunk, score, metadata} dicts ranked by relevance.
-        @desc_ Embeds the query and retrieves the nearest chunks from the FAISS index.
-                Scores are normalized to 0-1 similarity (higher = more relevant).
+        @return_ list[dict] : List of {chunk, score, metadata} dicts ranked by relevance using RRF.
+        @desc_ Embeds the query and retrieves the nearest chunks using both FAISS and BM25.
         """
         if self._index is None or self._index.ntotal == 0:
             return []
 
         top_k = top_k if top_k is not None else FrameworkConfig._RETRIEVAL_TOP_K
-        ## @logic_ Clamp top_k to available vectors
         top_k = min(top_k, self._index.ntotal)
 
+        # 1. FAISS Search
         query_embedding = self._get_embeddings_([query])
-        distances, indices = self._index.search(query_embedding, top_k)
-
-        results = []
+        distances, indices = self._index.search(query_embedding, top_k * 2) # Fetch extra for RRF
+        
+        vector_results = {}
         for i, idx in enumerate(indices[0]):
             if idx < len(self._chunks):
-                ## @logic_ Convert L2 distance to similarity score (higher = better)
-                ## Formula: similarity = 1 / (1 + distance)
-                ## Range: (0, 1] where 1.0 = exact match
                 raw_distance = float(distances[0][i])
                 similarity_score = 1.0 / (1.0 + raw_distance)
-                
-                chunk_data = self._chunks[idx]
-                if isinstance(chunk_data, dict):
-                    results.append({
-                        "chunk": chunk_data["text"],
-                        "metadata": chunk_data["metadata"],
-                        "score": similarity_score
-                    })
-                else:
-                    results.append({
-                        "chunk": chunk_data,
-                        "metadata": {},
-                        "score": similarity_score
-                    })
+                vector_results[idx] = similarity_score
+
+        # 2. BM25 Search
+        bm25_results = {}
+        if self._bm25:
+            tokenized_query = query.lower().split(" ")
+            bm25_scores = self._bm25.get_scores(tokenized_query)
+            # Take top 50 from bm25 to save time in RRF
+            top_bm25_idx = np.argsort(bm25_scores)[::-1][:top_k * 2]
+            for idx in top_bm25_idx:
+                if bm25_scores[idx] > 0:
+                    bm25_results[idx] = float(bm25_scores[idx])
+
+        # 3. Reciprocal Rank Fusion (RRF)
+        ranked_vector = {idx: rank for rank, (idx, _) in enumerate(sorted(vector_results.items(), key=lambda x: x[1], reverse=True), 1)}
+        ranked_bm25 = {idx: rank for rank, (idx, _) in enumerate(sorted(bm25_results.items(), key=lambda x: x[1], reverse=True), 1)}
+        
+        combined_scores = {}
+        all_indices = set(ranked_vector.keys()).union(set(ranked_bm25.keys()))
+        
+        k_rrf = 60
+        for idx in all_indices:
+            score = 0.0
+            if idx in ranked_vector:
+                score += 1.0 / (k_rrf + ranked_vector[idx])
+            if idx in ranked_bm25:
+                score += 1.0 / (k_rrf + ranked_bm25[idx])
+            combined_scores[idx] = score
+
+        # 4. Final Ranking
+        top_final_idx = sorted(combined_scores.keys(), key=lambda x: combined_scores[x], reverse=True)[:top_k]
+
+        results = []
+        for idx in top_final_idx:
+            chunk_data = self._chunks[idx]
+            if isinstance(chunk_data, dict):
+                results.append({
+                    "chunk": chunk_data["text"],
+                    "metadata": chunk_data["metadata"],
+                    "score": combined_scores[idx]
+                })
+            else:
+                results.append({
+                    "chunk": chunk_data,
+                    "metadata": {},
+                    "score": combined_scores[idx]
+                })
 
         return results
 
@@ -258,4 +320,6 @@ class EmbeddingManager:
 
         with open(chunks_path, "r", encoding="utf-8") as f:
             self._chunks = json.load(f)
+            
+        self._init_bm25_()
         logger.info(f"Loaded FAISS index ({self._index.ntotal} vectors) from {index_path}")

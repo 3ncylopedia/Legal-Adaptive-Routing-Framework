@@ -5,6 +5,7 @@ import uuid
 from flask import Flask, render_template, request, Response, stream_with_context
 from dotenv import load_dotenv
 from src.adaptive_routing import FrameworkConfig, TriageModule, SemanticRouterModule, LegalRetrievalModule
+from src.adaptive_routing.modules.legal_retrieval.utils import legal_indexing
 load_dotenv()
 
 # --- Retry Configuration ---
@@ -50,6 +51,17 @@ try:
         print(">>> FAISS index built and saved successfully.")
         
     print(">>> Modules initialized successfully.")
+    
+    # Check sync status on startup
+    sync_info = legal_indexing.verify_index_integrity(
+        corpus_dir="legal-corpus",
+        chunks_path=chunks_file
+    )
+    if not sync_info["is_synced"]:
+        print(f">>> WARNING: Index is out of sync. {sync_info['missing_count']} documents missing.")
+    else:
+        print(">>> Index is fully synced with corpus.")
+
 except Exception as e:
     print(f">>> Error initializing modules: {e}")
     triage_module = None
@@ -59,6 +71,21 @@ except Exception as e:
 # In-memory session storage
 # Format: { "session_id": { "route": "...", "history": [...] } }
 SESSIONS = {}
+
+@app.route('/api/sync-status', methods=['GET'])
+def get_sync_status():
+    """Check if the vector index is up to date with the legal corpus."""
+    try:
+        index_dir = os.path.join(os.getcwd(), "localfiles", "legal-basis")
+        chunks_file = os.path.join(index_dir, "combined_index.json")
+        
+        sync_info = legal_indexing.verify_index_integrity(
+            corpus_dir="legal-corpus",
+            chunks_path=chunks_file
+        )
+        return json.dumps(sync_info)
+    except Exception as e:
+        return json.dumps({"error": str(e)}), 500
 
 @app.route('/')
 def index():
@@ -168,7 +195,7 @@ def chat():
             # 4. RAG Retrieval (skip for Casual routes)
             context_str = None
             if route != "Casual-LLM":
-                yield json.dumps({"type": "step", "content": "Retrieving relevant legal context..."}) + "\n"
+                yield json.dumps({"type": "step", "content": "Retrieving context via Hybrid Search (BM25 + Semantic)..."}) + "\n"
                 
                 if retrieval_module:
                     try:
@@ -183,7 +210,7 @@ def chat():
                                     "text": chunk.get("chunk", ""), 
                                     "metadata": chunk.get("metadata", {}), 
                                     "score": float(chunk.get("score", 0.0))
-                                } for chunk in retrieved_chunks[:3]]
+                                } for chunk in retrieved_chunks[:5]]
                             }) + "\n"
                             context_str = "\n".join([c.get("chunk", "") for c in retrieved_chunks])
                         else:

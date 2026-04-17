@@ -73,6 +73,7 @@ from src.adaptive_routing import (
     SemanticRouterModule, 
     LegalRetrievalModule
 )
+from src.adaptive_routing.modules.legal_retrieval.utils import legal_indexing
 
 from rich.console import Console
 from rich.panel import Panel
@@ -358,6 +359,7 @@ def print_help():
     table.add_column("Description", style="dim")
     table.add_row("-help", "Show this help message")
     table.add_row("-config", "Enter configuration menu")
+    table.add_row("-reindex", "Rebuild the legal FAISS index")
     table.add_row("-clear", "Clear console and conversation history")
     table.add_row("-exit", "Exit the assistant")
     console.print()
@@ -409,6 +411,21 @@ def main():
                 chunks_path="localfiles/legal-basis/combined_index.json"
             )
             print_status_box("Legal Retrieval", "Loaded", "green")
+
+            # Check sync status
+            sync_info = legal_indexing.verify_index_integrity(
+                corpus_dir="legal-corpus",
+                chunks_path="localfiles/legal-basis/combined_index.json"
+            )
+            if not sync_info["is_synced"]:
+                print_status_box(
+                    "Index Sync", 
+                    f"Out of Sync ({sync_info['missing_count']} missing)", 
+                    "yellow"
+                )
+                console.print(f"    [yellow]Tip: Run [bold]-reindex[/bold] to update the knowledge base.[/yellow]")
+            else:
+                print_status_box("Index Sync", "Synced", "green")
 
     except Exception as e:
         print_error_box(
@@ -464,6 +481,23 @@ def main():
                 clear_screen()
                 print_banner()
                 print_active_config()
+                continue
+
+            if user_input.lower() == '-reindex':
+                with console.status("[bold yellow]Rebuilding Index... (This will take a while)[/]", spinner="bouncingBar"):
+                    try:
+                        legal_indexing.rebuild_index(
+                            corpus_dir="legal-corpus",
+                            output_dir="localfiles/legal-basis"
+                        )
+                        # Reload retrieval module with new index
+                        retrieval = LegalRetrievalModule(
+                            index_path="localfiles/legal-basis/combined_index.faiss",
+                            chunks_path="localfiles/legal-basis/combined_index.json"
+                        )
+                        console.print("  [green]✓ Index rebuilt and reloaded successfully.[/green]")
+                    except Exception as reindex_err:
+                        print_error_box("Re-indexing Failed", str(reindex_err))
                 continue
 
             # ──────────────────────────────────────────────────
@@ -543,7 +577,7 @@ def main():
             # ──────────────────────────────────────────────────
             context_str = None
             if route != "Casual-LLM":
-                with console.status("[green]📚 Searching legal corpus...[/green]", spinner="dots"):
+                with console.status("[green]📚 Searching legal corpus (Hybrid BM25 + Vector)...[/green]", spinner="dots"):
                     try:
                         retrieval_output = retrieval._process_retrieval_(normalized_text)
                         chunks = retrieval_output.get("retrieved_chunks", [])

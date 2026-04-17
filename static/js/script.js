@@ -15,6 +15,37 @@ let isProcessing = false;
 let currentSessionId = null;
 window.currentRagChunks = []; // Global to store chunks for the modal
 
+/**
+ * Update the UI to reflect the current sync status of the legal index.
+ */
+async function updateSyncStatus() {
+    const container = document.getElementById('sync-status-container');
+    const dot = container.querySelector('.status-dot');
+    const text = container.querySelector('.status-text');
+
+    try {
+        const res = await fetch('/api/sync-status');
+        const data = await res.json();
+
+        if (data.is_synced) {
+            dot.className = 'status-dot green';
+            text.innerText = 'Index Synced';
+            container.title = `Index is up to date with ${data.corpus_count} documents.`;
+        } else {
+            dot.className = 'status-dot yellow';
+            text.innerText = `Out of Sync (${data.missing_count})`;
+            container.title = `${data.missing_count} documents are missing from the index. Run -reindex in CLI.`;
+        }
+    } catch (e) {
+        dot.className = 'status-dot red';
+        text.innerText = 'Sync Error';
+        container.title = 'Failed to fetch index sync status.';
+    }
+}
+
+// Initial check
+updateSyncStatus();
+
 // =============================================
 // Settings Modal & Theme Logic
 // =============================================

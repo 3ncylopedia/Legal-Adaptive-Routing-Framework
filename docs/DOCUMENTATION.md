@@ -10,11 +10,11 @@
 
 The **Legal Adaptive Routing Framework** is a modular system that processes legal queries through three intelligent stages:
 
-1. **Linguistic Normalization** — Converts multilingual input (Tagalog, Taglish, Cantonese, etc.) into standardized legal English
-2. **Semantic Routing** — Classifies queries by complexity and intent, routing to the appropriate LLM
-3. **Legal Retrieval (RAG)** — Retrieves relevant legal provisions from a FAISS vector store to ground LLM responses in actual law
+1. **Linguistic Normalization** — Converts multilingual input (Tagalog, Taglish, Cantonese, etc.) into standardized legal English.
+2. **Semantic Routing** — Classifies queries by intent and routing to the appropriate reasoning LLM.
+3. **Legal Retrieval (RAG)** — Uses a **Hybrid Search Engine** (FAISS Vector Store + BM25 Lexical Keyword Store) combined via Reciprocal Rank Fusion (RRF) to retrieve the most relevant legal provisions, grounding AI responses in actual law.
 
-The framework communicates with LLMs through the **OpenRouter API** and uses **FAISS** for efficient vector similarity search.
+The framework communicates with LLMs through the **OpenRouter API** and supports scalable multi-step query processing.
 
 ---
 
@@ -42,11 +42,11 @@ flowchart TD
 
     subgraph RAG["📚 Legal Retrieval Module"]
         direction TB
-        EM["EmbeddingManager<br/><i>Embed + Index (JSON bypass)</i>"]
-        LR["LegalRetriever<br/><i>Similarity search</i>"]
-        FAISS["FAISS Vector Store<br/><i>HK & PH indices</i>"]
-        EM --> FAISS
-        LR --> FAISS
+        EM["EmbeddingManager<br/><i>Hybrid Indexing (FAISS + BM25)</i>"]
+        LR["LegalRetriever<br/><i>Hybrid Search & RRF Scoring</i>"]
+        STORE["Hybrid Vector & Keyword Store<br/><i>HK & PH legal indices</i>"]
+        EM --> STORE
+        LR --> STORE
     end
 
     subgraph Generation["⚖️ Response Generation"]
@@ -63,7 +63,7 @@ flowchart TD
     User --> Triage
     Triage -->|Normalized English| Router
     Router -->|Route + Query| RAG
-    RAG -->|Augmented Context| Generation
+    RAG -->|Augmented Context<br/>(Deduplicated/Parent/Hybird)| Generation
     CASUAL --> Response["📄 Legal Response"]
     GEN --> Response
     REAS --> Response
@@ -101,9 +101,10 @@ User Input (any language)
                ▼
 ┌──────────────────────────────────────────┐
 │  Stage 3: LEGAL RETRIEVAL (RAG)          │
-│  • Retrieves relevant law provisions     │
-│  • FAISS vector similarity search        │
-│  Output: {retrieved_chunks + scores}     │
+│  • Hybrid Search (FAISS + BM25)          │
+│  • Retrieve law provisions, deduplicate, │
+│    and inject parent context.            │
+│  Output: {retrieved_chunks + RRF scores} │
 └──────────────┬───────────────────────────┘
                │
                ▼
@@ -129,6 +130,7 @@ pip install -r requirements.txt
 - `requests` — HTTP client for OpenRouter API
 - `python-dotenv` — Environment variable management
 - `faiss-cpu==1.7.4` — Vector similarity search
+- `rank-bm25` — Lexical keyword search (BM25)
 - `numpy<2` — Numerical operations
 
 ### 2. Set Up Environment
@@ -167,8 +169,8 @@ Each module has its own comprehensive documentation with API reference, usage ex
 | 1 | **Configuration** | [configuration.md](configuration.md) | `FrameworkConfig` — all settings, env variables, runtime overrides |
 | 2 | **Core Engine** | [core_engine.md](core_engine.md) | `LLMRequestEngine` — API interface, multimodal support, exception hierarchy |
 | 3 | **Triage Module** | [triage_module.md](triage_module.md) | `TriageModule` — linguistic normalization, language detection, state management |
-| 4 | **Semantic Router** | [semantic_router_module.md](semantic_router_module.md) | `SemanticRouterModule` — intent classification, dual-engine response generation |
-| 5 | **Legal Retrieval (RAG)** | [legal_retrieval_module.md](legal_retrieval_module.md) | `LegalRetrievalModule` — document ingestion, FAISS indexing, context retrieval |
+| 4 | **Semantic Router** | [semantic_router_module.md](semantic_router_module.md) | `SemanticRouterModule` — intent classification, dual-engine generation, contact details routing |
+| 5 | **Legal Retrieval (RAG)** | [legal_retrieval_module.md](legal_retrieval_module.md) | `LegalRetrievalModule` — document ingestion, hybrid index (FAISS+BM25), reciprocal rank fusion (RRF) |
 | 6 | **Usage Examples** | [USAGE_EXAMPLES.md](USAGE_EXAMPLES.md) | Centralized usage examples across all framework modules |
 
 ---
@@ -205,7 +207,9 @@ src/
         ├── retrieval.py                     # LegalRetrievalModule (Orchestrator)
         └── legal_retrieval/                 # RAG sub-components
             ├── embedding.py                 #   EmbeddingManager (chunking + FAISS)
-            └── retriever.py                 #   LegalRetriever (context search)
+            ├── retriever.py                 #   LegalRetriever (context search)
+            └── utils/                       #   Developer Utilities
+                └── legal_indexing.py        #     Indexing/Sync helpers
                                              #   → docs/legal_retrieval_module.md
 ```
 
@@ -237,6 +241,8 @@ from src.adaptive_routing import (
 | `LegalRetrievalModule` | `build_and_save_index(dir, out, prefix)` | Build FAISS index from JSON corpus |
 | `LegalRetrievalModule` | `_save_index_(index, chunks)` | Persist index to disk |
 | `LegalRetrievalModule` | `_load_index_(index, chunks)` | Load saved index |
+| `legal_indexing` | `verify_index_integrity(corpus, chunks)` | Check index sync status |
+| `legal_indexing` | `rebuild_index(corpus, out)` | Full index rebuild (DMW/IRRRA support) |
 | `FrameworkConfig` | `_update_settings_(**kwargs)` | Runtime configuration override |
 
 ---

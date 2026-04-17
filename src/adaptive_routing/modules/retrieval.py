@@ -9,8 +9,8 @@ Saint Louis University : Team 404FoundUs
 from src.adaptive_routing.modules.legal_retrieval.embedding import EmbeddingManager
 from src.adaptive_routing.modules.legal_retrieval.retriever import LegalRetriever
 from src.adaptive_routing.config import FrameworkConfig
+from src.adaptive_routing.modules.legal_retrieval.utils import legal_indexing
 import os
-import glob
 import json
 import logging
 
@@ -95,49 +95,11 @@ class LegalRetrievalModule:
         @params output_dir : (str) Directory where the generated FAISS index and chunks will be saved.
         @params index_prefix : (str) Prefix for the output files (e.g., 'hk_index').
         @return_ str : Path to the created FAISS index file.
-        @desc_ A utility function to crawl a valid JSON corpus, ingest documents, 
-               and permanently save the FAISS vector store for future usage.
+        @desc_ A utility function that delegates to legal_indexing.rebuild_index to crawl,
+               validate, and persist a FAISS vector store.
         """
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
-            
-        json_files = glob.glob(os.path.join(corpus_dir, "**", "*.json"), recursive=True)
-        docs = []
-        
-        for file_path in json_files:
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    
-                if data.get("is_repealed", False):
-                    continue
-                    
-                jurisdiction = data.get("jurisdiction", "Unknown")
-                title = data.get("title", "No Title")
-                content = data.get("content", "")
-                
-                if content.strip():
-                    json_str = json.dumps(data, ensure_ascii=False, indent=2)
-                    docs.append({
-                        "content": json_str,
-                        "metadata": {
-                            "jurisdiction": jurisdiction,
-                            "title": title,
-                            "category": data.get("metadata", {}).get("corpus_category", "Unknown"),
-                            "source_file": data.get("metadata", {}).get("source_file", "Unknown")
-                        }
-                    })
-            except Exception as e:
-                logger.error(f"Error reading {file_path}: {e}")
-                
-        if docs:
-            logger.info(f"Ingesting {len(docs)} documents from {corpus_dir}")
-            self._ingest_documents_(docs)
-            
-            faiss_path = os.path.join(output_dir, f"{index_prefix}.faiss")
-            chunks_path = os.path.join(output_dir, f"{index_prefix}.json")
-            
-            self._save_index_(faiss_path, chunks_path)
-            return faiss_path
-        else:
-            raise ValueError(f"No valid JSON documents found in corpus directory: {corpus_dir}")
+        return legal_indexing.rebuild_index(
+            corpus_dir=corpus_dir,
+            output_dir=output_dir,
+            index_prefix=index_prefix
+        )

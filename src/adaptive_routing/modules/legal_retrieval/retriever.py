@@ -37,12 +37,17 @@ class LegalRetriever:
         
         ## @logic_ Apply relevance threshold filtering
         threshold = score_threshold if score_threshold is not None else FrameworkConfig._RETRIEVAL_SCORE_THRESHOLD
+        
+        # Detect RRF scoring (RRF scores are typically < 0.1). If threshold is for cosine, bypass it.
         if threshold > 0.0:
-            before_count = len(search_results)
-            search_results = [r for r in search_results if r["score"] >= threshold]
-            filtered_count = before_count - len(search_results)
-            if filtered_count > 0:
-                logger.info(f"Filtered {filtered_count} results below score threshold {threshold:.3f}")
+            if search_results and max(r["score"] for r in search_results) < 0.1 and threshold >= 0.1:
+                logger.info("RRF scoring detected. Bypassing explicit cosine thresholding to preserve hybrid search results.")
+            else:
+                before_count = len(search_results)
+                search_results = [r for r in search_results if r["score"] >= threshold]
+                filtered_count = before_count - len(search_results)
+                if filtered_count > 0:
+                    logger.info(f"Filtered {filtered_count} results below score threshold {threshold:.3f}")
 
         ## @logic_ Apply jurisdiction metadata filter if specified
         if jurisdiction:
@@ -51,4 +56,17 @@ class LegalRetriever:
                 if r.get("metadata", {}).get("jurisdiction", "").upper() == jurisdiction.upper()
             ]
 
-        return search_results
+        ## @logic_ Deduplicate and inject parent context
+        unique_parents = set()
+        final_results = []
+        for r in search_results:
+            parent = r.get("metadata", {}).get("parent_context")
+            if parent:
+                if parent not in unique_parents:
+                    unique_parents.add(parent)
+                    r["chunk"] = parent
+                    final_results.append(r)
+            else:
+                final_results.append(r)
+
+        return final_results

@@ -47,7 +47,7 @@ class RoutingClassifier:
             "\n"
             "General-LLM:\n"
             "- General legal information\n"
-            "- Definitions, explanations, rights overview\n"
+            "- Definitions, explanations, rights overview, Contact Details\n"
             "- Simple Q&A about law\n"
             "- Summarize Legal Findings\n"
             "- Perform Simplifications\n"

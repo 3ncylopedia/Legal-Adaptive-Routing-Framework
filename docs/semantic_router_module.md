@@ -268,7 +268,7 @@ The classifier instructs the LLM to return structured JSON:
 | Route | When Used |
 |:---|:---|
 | `Casual-LLM` | Greetings, gratitude, farewells, small talk, single-word affirmations. |
-| `General-LLM` | General legal information, definitions, explanations, rights overview, simple Q&A, no personalized advice needed |
+| `General-LLM` | General legal information, definitions, explanations, rights overview, Contact Details, simple Q&A, no personalized advice needed |
 | `Reasoning-LLM` | Real or hypothetical situations, asks what action to take, involves disputes/violations/contracts/termination/abuse/legal risk, requires legal interpretation |
 
 ---
@@ -279,7 +279,7 @@ The built-in system prompt defines two LLM pathways:
 
 **General-LLM criteria:**
 - General legal information
-- Definitions, explanations, rights overview
+- Definitions, explanations, rights overview, Contact Details
 - Simple Q&A
 - No personalized advice
 - No complex scenario or dispute

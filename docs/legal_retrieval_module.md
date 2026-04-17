@@ -30,6 +30,10 @@ The **Legal Retrieval Module** implements the **Retrieval-Augmented Generation (
   - [Constructor](#legalretriever-constructor)
   - [_retrieve_context_()](#_retrieve_context_)
 - [JSON Corpus Format](#json-corpus-format)
+- [Developer Utilities (utils)](#developer-utilities-utils)
+  - [legal_indexing Module](#legal_indexing-module)
+  - [Rebuilding the Index](#rebuilding-the-index)
+  - [Sync Validation](#sync-validation)
 - [Usage Examples](#usage-examples)
 - [Customization Guide](#customization-guide)
 
@@ -52,8 +56,8 @@ The **Legal Retrieval Module** implements the **Retrieval-Augmented Generation (
 │  └────────────────────────┘    └──────────────────────────┘  │
 │                                                              │
 │  ┌────────────────────────────────────────────────────────┐  │
-│  │                  FAISS Vector Store                    │  │
-│  │              (IndexFlatL2 — L2 Distance)               │  │
+│  │               Hybrid Vector & BM25 Store               │  │
+│  │         (IndexFlatL2 Core + BM25 Keyword Index)        │  │
 │  └────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -67,7 +71,8 @@ The **Legal Retrieval Module** implements the **Retrieval-Augmented Generation (
 **Data flow — Retrieval:**
 1. Query → `_process_retrieval_()` → `LegalRetriever._retrieve_context_()`
 2. Query embedded → `_get_embeddings_()`
-3. FAISS nearest-neighbor search → top-K results returned with scores
+3. Hybrid Search: FAISS nearest-neighbor search + BM25 keyword search → results combined via Reciprocal Rank Fusion (RRF)
+4. Results are deduplicated and parent context is injected if available
 
 ---
 
@@ -170,24 +175,26 @@ The **main entry point** for retrieval. Returns the most relevant document chunk
     "query": str,                      # The original query string
     "retrieved_chunks": [              # List of relevant chunks, ranked by similarity
         {
-            "chunk": str,              # The raw text chunk from the index
-            "metadata": dict,          # Dictionary tracking jurisdiction, title, source_file, and category
-            "score": float             # FAISS L2 distance (lower = more similar)
+            "chunk": str,              # The raw text chunk or parent context from the index
+            "metadata": dict,          # Dictionary tracking jurisdiction, title, source_file, category, and parent_context
+            "score": float             # RRF (Reciprocal Rank Fusion) score (higher = more similar)
         },
         ...
     ]
 }
 ```
 
-**Understanding scores**: The `score` value is the L2 (Euclidean) distance between query and document embeddings. **Lower scores indicate higher semantic similarity.**
+**Understanding scores**: The `score` value is an RRF (Reciprocal Rank Fusion) score combining FAISS L2 distance and BM25 relevance ranking. **Higher scores indicate higher semantic and keyword similarity.**
 
 | Score Range | Interpretation |
 |:---|:---|
-| `< 0.5` | Very high similarity |
-| `0.5 – 1.0` | Moderate similarity |
-| `> 1.0` | Low similarity |
+| `> 0.03` | High similarity |
+| `0.015 – 0.03` | Moderate similarity |
+| `< 0.015` | Low similarity |
 
-> **Note**: Score thresholds depend on the embedding model and domain. These ranges are approximate guidelines.
+> **Note**: Score thresholds depend on the retrieval algorithm parameters. The system automatically bypasses explicit cosine similarity thresholds when RRF scoring is detected to preserve optimal hybrid results. 
+> 
+> **Parent Context Injection**: During retrieval, if a chunk contains a `parent_context` metadata key, the retriever will automatically deduplicate results and inject the broader contiguous parent text as the retrieval chunk, rather than just the isolated line.
 
 ---
 
@@ -235,7 +242,7 @@ Loads a previously persisted FAISS index and chunks from disk.
 def build_and_save_index(self, corpus_dir: str, output_dir: str, index_prefix: str) -> str
 ```
 
-A **utility method** that crawls a directory of JSON corpus files, ingests all documents, and saves the resulting FAISS index.
+A **utility method** that delegates to `legal_indexing.rebuild_index` to efficiently crawl a directory of JSON corpus files, validate them, generate embeddings with a progress bar, and save the resulting hybrid FAISS + BM25 index.
 
 | Parameter | Type | Required | Description |
 |:---|:---|:---|:---|
@@ -246,13 +253,7 @@ A **utility method** that crawls a directory of JSON corpus files, ingests all d
 **Returns**: `str` — Absolute path to the generated `.faiss` file
 
 **Behavior:**
-1. Recursively finds all `.json` files in `corpus_dir`
-2. Skips documents where `is_repealed` is `True`
-3. Extracts and formats the complete dictionary using `json.dumps(data, ensure_ascii=False, indent=2)`
-4. Ingests all documents with `bypass_chunking=True` to retain their JSON structure
-5. Saves the index to `output_dir`
-
-**Raises**: `ValueError` if no valid JSON documents are found in the corpus directory.
+Delegates entirely to `legal_indexing.rebuild_index`. For full details on the rebuilt logic, see the Developer Utilities section below.
 
 **Example:**
 
@@ -275,7 +276,7 @@ print(f"Index saved to: {faiss_path}")
 
 **Import**: `from src.adaptive_routing.modules.legal_retrieval.embedding import EmbeddingManager`
 
-Handles all document processing: chunking, embedding generation via the OpenRouter API, and FAISS index management.
+Handles all document processing: chunking, embedding generation via the OpenRouter API, and FAISS + BM25 index management.
 
 ### EmbeddingManager Constructor
 
@@ -400,8 +401,8 @@ Embeds the query and retrieves the nearest chunks from the FAISS index.
 
 **Behavior:**
 - Returns empty list if no index exists or index is empty
-- `top_k` is automatically clamped to the number of available vectors
-- Results sorted by L2 distance (ascending — most similar first)
+- Uses Reciprocal Rank Fusion (RRF) to combine semantic text search (FAISS) and lexical keyword search (BM25)
+- Results sorted by RRF score (descending — most similar first)
 
 ---
 
@@ -496,6 +497,57 @@ legal-corpus/
 ```
 
 The method searches **recursively** — nested subdirectories are fully supported.
+
+---
+
+## Developer Utilities (utils)
+
+Located at `src/adaptive_routing/modules/legal_retrieval/utils/`, this package provides helpers for maintaining the knowledge base and importing custom data.
+
+### legal_indexing Module
+
+The `legal_indexing.py` module contains several future-proof functions for developers:
+
+#### `ingest_custom_dataset()`
+Allows developers to import a list of dictionaries directly into the RAG index.
+```python
+from src.adaptive_routing.modules.legal_retrieval.utils import legal_indexing
+
+data = [
+    {"jurisdiction": "PH", "title": "Custom Doc", "content": "Legal text..."},
+    ...
+]
+legal_indexing.ingest_custom_dataset(retrieval_module, data)
+```
+
+#### `verify_index_integrity()`
+Compares the files in `legal-corpus/` with the currently loaded index to detect if any new files have been added but not yet indexed.
+```python
+sync_info = legal_indexing.verify_index_integrity("legal-corpus", "localfiles/legal-basis/combined_index.json")
+print(f"Synced: {sync_info['is_synced']}")
+print(f"Missing docs: {sync_info['missing_count']}")
+```
+
+### Rebuilding the Index
+
+To ensure all new datasets (like **DMW** or **IRRRA**) are included, use the `rebuild_index` function or the CLI command:
+
+**Via Python:**
+```python
+from src.adaptive_routing.modules.legal_retrieval.utils import legal_indexing
+legal_indexing.rebuild_index("legal-corpus", "localfiles/legal-basis")
+```
+
+**Via CLI:**
+```bash
+python CLI.py
+# Inside CLI:
+👤 ❯ -reindex
+```
+
+### Sync Validation
+
+The framework now checks for synchronization on startup in both CLI and Web modes. A warning will appear if the vector store is behind the local corpus files.
 
 ---
 

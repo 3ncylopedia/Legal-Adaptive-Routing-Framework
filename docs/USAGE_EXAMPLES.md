@@ -7,8 +7,9 @@ This guide provides centralized, copy-pasteable snippets for using the framework
 2. [Triage Module Examples](#triage-module-examples)
 3. [Semantic Router Examples](#semantic-router-examples)
 4. [Legal Retrieval (RAG) Examples](#legal-retrieval-rag-examples)
-5. [End-to-End Advanced Pipeline Example](#end-to-end-advanced-pipeline-example)
-6. [Core Engine Errors & Resilience](#core-engine-errors--resilience)
+5. [Index Management & Developer Utilities](#index-management--developer-utilities)
+6. [End-to-End Advanced Pipeline Example](#end-to-end-advanced-pipeline-example)
+7. [Core Engine Errors & Resilience](#core-engine-errors--resilience)
 
 ---
 
@@ -203,6 +204,58 @@ retriever = LegalRetrievalModule(
     index_path="Faiss/ph_index.faiss",
     chunks_path="Faiss/ph_index.json"
 )
+```
+
+---
+
+## Index Management & Developer Utilities
+
+These tools help maintain the vector index and allow developers to easily import custom data.
+
+### 1. Verification of Index Sync
+Detect if your local corpus have been updated without re-indexing.
+```python
+from src.adaptive_routing.modules.legal_retrieval.utils import legal_indexing
+
+sync_info = legal_indexing.verify_index_integrity(
+    corpus_dir="legal-corpus",
+    chunks_path="localfiles/legal-basis/combined_index.json"
+)
+
+if not sync_info['is_synced']:
+    print(f"Warning: {sync_info['missing_count']} documents are missing from the index!")
+else:
+    print("Everything is up to date!")
+```
+
+### 2. Performing a Full Re-index (DMW/IRRRA support)
+Rebuild the entire FAISS index from the latest corpus files.
+```python
+from src.adaptive_routing.modules.legal_retrieval.utils import legal_indexing
+
+# Rebuild and save to the default path
+legal_indexing.rebuild_index(
+    corpus_dir="legal-corpus",
+    output_dir="localfiles/legal-basis"
+)
+```
+
+### 3. Importing Custom Developer Datasets
+Inject custom data dictionaries into an active session.
+```python
+from src.adaptive_routing import LegalRetrievalModule
+from src.adaptive_routing.modules.legal_retrieval.utils import legal_indexing
+
+retriever = LegalRetrievalModule()
+custom_data = [
+    {
+        "jurisdiction": "Philippines",
+        "title": "New Regulation 101",
+        "content": "Full legal text goes here..."
+    }
+]
+
+legal_indexing.ingest_custom_dataset(retriever, custom_data)
 ```
 
 ---
