@@ -1,7 +1,7 @@
 requests
 dotenv
 flask
-faiss-cpu==1.7.4
+faiss-cpu
 numpy<2
 rich
 prompt_toolkit
