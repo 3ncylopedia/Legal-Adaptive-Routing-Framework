@@ -177,7 +177,7 @@ Each module has its own comprehensive documentation with API reference, usage ex
 | 3 | **Triage Module** | [triage_module.md](triage_module.md) | `TriageModule` — linguistic normalization, language detection, state management |
 | 4 | **Semantic Router** | [semantic_router_module.md](semantic_router_module.md) | `SemanticRouterModule` — intent classification, dual-engine generation, contact details routing |
 | 5 | **Legal Retrieval (RAG)** | [legal_retrieval_module.md](legal_retrieval_module.md) | `LegalRetrievalModule` — document ingestion, hybrid index (FAISS+BM25), reciprocal rank fusion (RRF) |
-| 6 | **Usage Examples** | [USAGE_EXAMPLES.md](USAGE_EXAMPLES.md) | Centralized usage examples across all framework modules |
+| 6 | **Usage Examples** | [usage_examples.md](usage_examples.md) | Centralized usage examples across all framework modules |
 
 ---
 

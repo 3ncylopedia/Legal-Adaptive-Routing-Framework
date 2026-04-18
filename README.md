@@ -6,11 +6,11 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![OpenRouter](https://img.shields.io/badge/OpenRouter-API-orange.svg)](https://openrouter.ai/)
-[![Documentation](https://img.shields.io/badge/docs-Documentation-green.svg)](docs/DOCUMENTATION.md)
+[![Documentation](https://img.shields.io/badge/docs-Documentation-green.svg)](docs/documentation.md)
 
 *Saint Louis University | Team 404FoundUs*
 
-[Documentation](docs/DOCUMENTATION.md) • [Report Bug](issues) • [Request Feature](issues)
+[Documentation](docs/documentation.md) • [Report Bug](issues) • [Request Feature](issues)
 
 </div>
 
@@ -176,7 +176,7 @@ if normalized_text:
 
 ## Documentation
 
-For detailed API references, configuration options, and architectural diagrams, please refer to the **[Full Documentation](docs/DOCUMENTATION.md)**.
+For detailed API references, configuration options, and architectural diagrams, please refer to the **[Full Documentation](docs/documentation.md)**.
 
 ---
 

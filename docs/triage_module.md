@@ -35,17 +35,16 @@ The **Triage Module** is the **first stage** of the Adaptive Routing pipeline. I
 ```
 ┌─────────────────────────────────────────────────────┐
 │                   TriageModule                      │
-│                  (Orchestrator)                      │
+│                  (Orchestrator)                     │
 │                                                     │
-│  ┌──────────────────┐    ┌───────────────────────┐  │
-│  │ LinguisticNormal │───▶│ LanguageStateDetector │  │
-│  │     izer         │    │                       │  │
-│  └──────────────────┘    └───────────────────────┘  │
-│          │                          │               │
-│    Uses LLM to                Stores state:         │
-│    normalize text            - original_prompt      │
-│    + detect language         - normalized_text      │
-│                              - detected_language    │
+│                ┌──────────────────┐                 │
+│                │ LinguisticNormal │                 │
+│                │     izer         │                 │
+│                └──────────────────┘                 │
+│                          │                          │
+│                    Uses LLM to                      │
+│                    normalize text                   │
+│                    + detect language                │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -53,8 +52,7 @@ The **Triage Module** is the **first stage** of the Adaptive Routing pipeline. I
 1. Raw input → `TriageModule._process_request_()` → `LinguisticNormalizer._normalize_text_()`
 2. LLM normalizes text + appends `<Detected Raw Language: ...>` tag
 3. `TriageModule` parses the tag via regex, splits normalized text from language
-4. `LanguageStateDetector._update_state_()` stores all results
-5. Returns `_get_state_()` dict to the caller
+4. Returns a fully stateless dict to the caller with keys: original_prompt, detected_language, and normalized_text
 
 ---
 
@@ -217,7 +215,7 @@ The `TriageModule` parses this tag via regex and stores it separately in the sta
 
 **Import**: `from src.adaptive_routing.modules.multihead_classifier.detector import LanguageStateDetector`
 
-A stateful component that stores the results of each triage cycle. Maintains the original input, detected language, and normalized output.
+An optional stateful component that can store the results of each triage cycle. Maintains the original input, detected language, and normalized output. **Note:** The `TriageModule` itself acts statelessly and does not use this component internally.
 
 ### LanguageStateDetector Constructor
 
@@ -393,9 +391,6 @@ triage = TriageModule()
 
 # Access the normalizer directly
 raw_output = triage._normalizer._normalize_text_("Some raw input")
-
-# Access the detector state
-state = triage._detector._get_state_()
 
 # Access the underlying engine
 engine = triage._engine
