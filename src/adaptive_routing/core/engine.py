@@ -1,10 +1,9 @@
-"""
-Saint Louis University : Team 404FoundUs
-@file src/adaptive_routing/core/engine.py
-@project_ LLM Legal Adaptive Routing Framework
-@desc_ Handler for OpenRouter API requests with robust error management.
-@deps_ requests, json, time, logging, src.adaptive_routing.config, src.adaptive_routing.core.exceptions
-"""
+## Saint Louis University
+## Team 404FoundUs
+## @file src/adaptive_routing/core/engine.py
+## @project_ LLM Legal Adaptive Routing Framework
+## @desc_ Handler for OpenRouter API requests with robust error management.
+## @deps requests, json, time, logging, src.adaptive_routing.config, src.adaptive_routing.core.exceptions
 
 import requests
 import json
@@ -23,24 +22,25 @@ logger = logging.getLogger(__name__)
 
 class LLMRequestEngine:
     """
-    @class_ LLMRequestEngine
+    @class LLMRequestEngine
     @desc_ Provides a unified interface for OpenRouter completions.
     @attr_ _api_key : (str) Credential for the OpenRouter API.
     @attr_ _model : (str) The specific LLM model to target.
     @attr_ _temperature : (float) Controls randomness of output.
     @attr_ _max_tokens : (int) Limit on response length.
     @attr_ _use_system_role : (bool) Toggle for system prompt support.
+    @attr_ _include_reasoning : (bool) Toggle for reasoning field inclusion.
     """
     def __init__(self, api_key=None, model=None, temperature=None, max_tokens=None, use_system_role=None, include_reasoning=None):
         self._url = "https://openrouter.ai/api/v1/chat/completions"
         
-        ## @Logic_ Determine system role usage: Argument > Config > Default(True)
+        ## @logic_ Determine system role usage: Argument > Config > Default(True)
         if use_system_role is not None:
             self._use_system_role = use_system_role
         else:
             self._use_system_role = getattr(FrameworkConfig, '_USE_SYSTEM_ROLE', True)
         
-        ## @Logic_ Determine reasoning usage
+        ## @logic_ Determine reasoning usage
         if include_reasoning is not None:
             self._include_reasoning = include_reasoning
         else:
@@ -65,13 +65,10 @@ class LLMRequestEngine:
         if self._max_tokens <= 0:
             raise InvalidInputError(f"max_tokens must be positive, got {self._max_tokens}")
 
-    # ------------------------------------------------------------------
-    # Shared Internal Helpers
-    # ------------------------------------------------------------------
     def _build_headers_(self):
         """
         @func_ _build_headers_
-        @return_ dict : HTTP headers for OpenRouter API requests.
+        @returns (dict) HTTP headers for OpenRouter API requests.
         @desc_ Centralized header construction used by all API methods.
         """
         return {
@@ -83,9 +80,9 @@ class LLMRequestEngine:
 
     def _parse_response_(self, response_json):
         """
-        @func_ _parse_response_ (@params response_json)
+        @func_ _parse_response_
         @params response_json : (dict) The parsed JSON from the API response.
-        @return_ str : The AI's response text, with optional reasoning prefix.
+        @returns (str) The AI's response text, with optional reasoning prefix.
         @desc_ Unified response parsing for both completion and chat completion methods.
         """
         if 'choices' in response_json and len(response_json['choices']) > 0:
@@ -105,7 +102,7 @@ class LLMRequestEngine:
 
     def _handle_request_error_(self, error, context="API request"):
         """
-        @func_ _handle_request_error_ (@params error, context)
+        @func_ _handle_request_error_
         @params error : (Exception) The caught exception.
         @params context : (str) Description of the operation for error messages.
         @desc_ Unified error handler that maps HTTP status codes to framework exceptions.
@@ -155,10 +152,10 @@ class LLMRequestEngine:
 
     def _call_api_(self, payload, timeout=None):
         """
-        @func_ _call_api_ (@params payload, timeout)
+        @func_ _call_api_
         @params payload : (dict) The JSON request payload.
-        @params timeout : (int, optional) Request timeout in seconds.
-        @return_ dict : Parsed JSON response from the API.
+        @params timeout : (int) Request timeout in seconds.
+        @returns (dict) Parsed JSON response from the API.
         @desc_ Executes an API call with retry logic and unified error handling.
         """
         headers = self._build_headers_()
@@ -167,6 +164,7 @@ class LLMRequestEngine:
         backoff = FrameworkConfig._RETRY_BACKOFF
 
         last_error = None
+        ## @iter_ range : Retrying the API call based on backoff logic
         for attempt in range(1 + retries):
             try:
                 response = requests.post(self._url, headers=headers, json=payload, timeout=timeout)
@@ -184,16 +182,14 @@ class LLMRequestEngine:
                 ## @logic_ Non-retryable errors (auth, model not found, etc.) — fail immediately
                 self._handle_request_error_(e, context="Completion")
 
-        ## @logic_ Should not reach here, but safety net
         if last_error:
             self._handle_request_error_(last_error, context="Completion")
 
-
     def _encode_image_(self, image_source):
         """
-        @func_ _encode_image_ (@params image_source)
+        @func_ _encode_image_
         @params image_source : (str) Path to image file or URL.
-        @return_ dict : JSON-compatiable image payload.
+        @returns (dict) JSON-compatiable image payload.
         @desc_ Helper to encode image from path or return URL as is
         """
         import base64
@@ -221,15 +217,15 @@ class LLMRequestEngine:
             }
         }
 
-
     def _get_completion_(self, prompt, sys_message, images=None):
         """
-        @func_ _get_completion_ (@params prompt, sys_message, images)
+        @func_ _get_completion_
         @params prompt : (str) The user's input prompt.
         @params sys_message : (str) System instruction (role).
-        @params images : (list[str]) Optional list of image paths/URLs.
-        @return_ str : The AI's response text.
-        @err_ Raises AuthenticationError, ModelNotFoundError, APIConnectionError, APIResponseError
+        @params images : (list) Optional list of image paths/URLs.
+        @returns (str) The AI's response text.
+        @raises AuthenticationError, ModelNotFoundError, APIConnectionError, APIResponseError
+        @desc_ Standard completion request for a single turn.
         """
         user_content = prompt
 
@@ -265,28 +261,25 @@ class LLMRequestEngine:
 
     def _get_chat_completion_(self, messages: list) -> str:
         """
-        @func_ _get_chat_completion_ (@params messages)
-        @params messages : (list[dict]) List of message dicts (role, content).
-        @return_ str : The AI's response text.
+        @func_ _get_chat_completion_
+        @params messages : (list) List of message dicts (role, content).
+        @returns (str) The AI's response text.
         @desc_ Direct interface for passing full conversation history.
         """
-        # Prepare messages based on system role support
         final_messages = []
         if not self._use_system_role:
-            # Merge system messages into the first user message
+            ## @logic_ Merge system messages into the first user message
             system_content = ""
             for msg in messages:
                 if msg["role"] == "system":
                     system_content += msg["content"] + "\n\n"
                 else:
-                    # If this is the first user message, prepend system content
                     if msg["role"] == "user" and system_content:
                         final_messages.append({"role": "user", "content": system_content + msg["content"]})
-                        system_content = "" # Reset
+                        system_content = "" 
                     else:
                         final_messages.append(msg)
             
-            # If system content remains (e.g. no user message?), just add it as user
             if system_content:
                 final_messages.insert(0, {"role": "user", "content": system_content.strip()})
         else:

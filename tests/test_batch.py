@@ -1,3 +1,9 @@
+## Saint Louis University
+## Team 404FoundUs
+## @file tests/test_batch.py
+## @project_ LLM Legal Adaptive Routing Framework
+## @desc_ Testing batch embedding capability of the OpenRouter API.
+
 import os
 import requests
 from dotenv import load_dotenv

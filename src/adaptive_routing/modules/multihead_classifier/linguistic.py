@@ -1,39 +1,36 @@
-"""
-Saint Louis University : Team 404FoundUs
-@file_ linguistic.py
-@project_ LLM Legal Adaptive Routing Framework
-@desc_ Hardened module for transforming Tagalog/Taglish into standardized English.
-@deps_ src.adaptive_routing.core.engine
-"""
+## Saint Louis University
+## Team 404FoundUs
+## @file src/adaptive_routing/modules/multihead_classifier/linguistic.py
+## @project_ LLM Legal Adaptive Routing Framework
+## @desc_ Component for converting multilingual legal queries into standardized English.
+## @deps src.adaptive_routing.core.engine, src.adaptive_routing.config
 
 from src.adaptive_routing.core.engine import LLMRequestEngine
 from src.adaptive_routing.config import FrameworkConfig
 
 class LinguisticNormalizer:
     """
-    @class_ LinguisticNormalizer
-    @desc_ Hardened module for transforming Tagalog/Taglish into standardized English.
-    @attr_ _handler : (LLMRequestEngine) Interaction engine for AI requests.
-    @attr_ _instruction : (str) System prompt for normalization.
+    @class LinguisticNormalizer
+    @desc_ Handles the conversion of Tagalog, Taglish, Cantonese, and Chinese inputs 
+           into formal English legal terminology using an LLM.
+    @attr_ _engine : (LLMRequestEngine) The engine used for normalization completions.
     """
-    def __init__(self, handler: LLMRequestEngine):
-        self._handler = handler
-        self._instruction = FrameworkConfig._TRIAGE_INSTRUCTIONS
+    def __init__(self, engine: LLMRequestEngine):
+        self._engine = engine
 
-    def _normalize_text_(self, raw_input: str, image_path: str = None) -> str:
+    def _normalize_text_(self, input_text: str, image_path: str = None) -> str:
         """
-        @func_ _normalize_text_ (@params raw_input, image_path)
-        @params raw_input : (str) The raw user string.
-        @params image_path : (str) Optional path/URL to an image.
-        @return_ str : The sanitized, English-only output with appended language tag.
+        @func_ _normalize_text_
+        @params input_text : (str) The raw user query.
+        @params image_path : (str, optional) Path to a supporting image.
+        @returns (str) The LLM's normalized English response.
+        @desc_ Sends the input to the LLM with normalization instructions.
         """
-        ## @logic_ Using a delimiter to separate the data from the prompt to prevent injection.
-        formatted_input = f"TEXT_TO_TRANSLATE: ###\n{raw_input}\n###"
-        
-        ## @logic_ If image, we pass it as a list to the engine
+        system_instructions = FrameworkConfig._TRIAGE_INSTRUCTIONS
         images = [image_path] if image_path else None
-
-        result = self._handler._get_completion_(formatted_input, self._instruction, images=images)
         
-        ## @logic_ Post-processing: ensure no lingering whitespace or artifacts
-        return result.strip()
+        return self._engine._get_completion_(
+            prompt=input_text,
+            sys_message=system_instructions,
+            images=images
+        )

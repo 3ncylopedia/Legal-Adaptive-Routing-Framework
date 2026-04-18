@@ -3,7 +3,7 @@
 ## @file src/adaptive_routing/config.py
 ## @project_ LLM Legal Adaptive Routing Framework
 ## @desc_ Centralized configuration for OpenRouter parameters and security.
-## @deps os, dotenv
+## @deps os, dotenv, logging
 
 import os
 import logging
@@ -18,15 +18,14 @@ class FrameworkConfig:
     """
     @class FrameworkConfig
     @desc_ Manages global AI hyperparameters in different modules.
-
+    
     IMPORTANT: Configuration values are read at engine initialization time (snapshot).
-    Call _update_settings_() BEFORE creating module instances (TriageModule, SemanticRouterModule, etc.).
-    Updating settings after modules are initialized will NOT affect existing engine instances.
+    Call _update_settings_() BEFORE creating module instances.
     """
-    ## @const_ Global Defaults
+    ## @const_ _API_KEY : Master credential for OpenRouter API.
     _API_KEY = os.getenv("OPENROUTER_API_KEY", "")
     
-    ## @const_ Triage Module Configuration (Linguistic Normalizer)
+    ## @const_ _TRIAGE_MODEL : Linguistic Normalizer model.
     _TRIAGE_MODEL = os.getenv("TRIAGE_MODEL", "qwen/qwen-turbo")
     _TRIAGE_TEMP = float(os.getenv("TRIAGE_TEMP", "0.6"))
     _TRIAGE_MAX_TOKENS = int(os.getenv("TRIAGE_MAX_TOKENS", "2000"))
@@ -45,21 +44,21 @@ class FrameworkConfig:
         "7. LANGUAGE DETECTION: At the very end of your response, append exactly: <Detected Raw Language: [Tagalog|English|Taglish|Cantonese|Other]>."
     )
 
-    ## @const_ Semantic Router Configuration
+    ## @const_ _ROUTER_MODEL : Semantic Router Classifier model.
     _ROUTER_MODEL = os.getenv("ROUTER_MODEL", "qwen/qwen-turbo")
     _ROUTER_TEMP = float(os.getenv("ROUTER_TEMP", "0.1"))
     _ROUTER_MAX_TOKENS = int(os.getenv("ROUTER_MAX_TOKENS", "250"))
     _ROUTER_USE_SYSTEM = os.getenv("ROUTER_USE_SYSTEM", "TRUE").lower() == "true"
     _ROUTER_REASONING = os.getenv("ROUTER_REASONING", "False").lower() == "true"
 
-    ## @const_ Fallbacks (Legacy/General)
+    ## @const_ _FALLBACKS : Legacy/Default settings.
     _DEFAULT_MODEL = _TRIAGE_MODEL 
     _TEMPERATURE = 0.7
     _MAX_TOKENS = 1500
     _USE_SYSTEM_ROLE = True
     _INCLUDE_REASONING = False
 
-    ## @const_ Network Resilience Configuration
+    ## @const_ _NETWORK : Resilience and timeout settings.
     _REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "30"))
     _EMBEDDING_TIMEOUT = int(os.getenv("EMBEDDING_TIMEOUT", "60"))
     _RETRY_COUNT = int(os.getenv("RETRY_COUNT", "2"))
@@ -69,28 +68,23 @@ class FrameworkConfig:
     def _update_settings_(cls, **kwargs):
         """
         @func_ _update_settings_
-        @params kwargs: Dict of hyperparameter overrides.
-        @logic_ Dynamically updates class attributes if they exist.
-        @raises ConfigurationError: If an unrecognized key is passed (prevents silent misconfiguration).
-
-        IMPORTANT: Must be called BEFORE module initialization. Existing engine instances
-        will NOT pick up changes made after their creation.
+        @params kwargs : Dict of hyperparameter overrides.
+        @raises ConfigurationError : If an unrecognized key is passed.
+        @desc_ Dynamically updates class attributes if they exist.
         """
         from src.adaptive_routing.core.exceptions import ConfigurationError
         
-        ## @iter_ kwargs: iterating over provided settings to update config
+        ## @iter_ kwargs : iterating over provided settings to update config
         for key, value in kwargs.items():
-            # Support both direct casing and underscored casing
             attr_name = f"_{key.upper()}" if not key.startswith("_") else key.upper()
             if hasattr(cls, attr_name):
                 setattr(cls, attr_name, value)
             else:
                 raise ConfigurationError(
                     f"Unknown config key: '{key}' (resolved to '{attr_name}'). "
-                    f"Valid keys include: {[a for a in dir(cls) if a.startswith('_') and a[1:2].isupper()]}"
                 )
 
-    ## @const_ General LLM Configuration (Information)
+    ## @const_ _GENERAL_MODEL : Information generation model settings.
     _GENERAL_MODEL = os.getenv("GENERAL_MODEL", "qwen/qwen3-next-80b-a3b-instruct:free")
     _GENERAL_TEMP = float(os.getenv("GENERAL_TEMP", "0.5"))
     _GENERAL_MAX_TOKENS = int(os.getenv("GENERAL_MAX_TOKENS", "2500"))
@@ -123,8 +117,8 @@ class FrameworkConfig:
         "- **Priority**: Prioritize user safety and clear escalation guidance where risk is implied."
     )
 
-    ## @const_ Reasoning LLM Configuration (Advice/Scenario)
-    _REASONING_MODEL = os.getenv("REASONING_MODEL", "deepseek/deepseek-chat-v3.1") # Fallback to working model
+    ## @const_ _REASONING_MODEL : Reasoning/Advice generation model settings.
+    _REASONING_MODEL = os.getenv("REASONING_MODEL", "deepseek/deepseek-chat-v3.1")
     _REASONING_TEMP = float(os.getenv("REASONING_TEMP", "0.7"))
     _REASONING_MAX_TOKENS = int(os.getenv("REASONING_MAX_TOKENS", "3000"))
     _REASONING_USE_SYSTEM = os.getenv("REASONING_USE_SYSTEM", "True").lower() == "true"
@@ -159,7 +153,7 @@ class FrameworkConfig:
         "- **Priority**: Prioritize user safety and clear escalation guidance where risk is implied."
     )
 
-    ## @const_ Casual LLM Configuration (Greetings, Thanks, Small Talk)
+    ## @const_ _CASUAL_MODEL : Casual/Greeting model settings.
     _CASUAL_MODEL = os.getenv("CASUAL_MODEL", "qwen/qwen-turbo")
     _CASUAL_TEMP = float(os.getenv("CASUAL_TEMP", "0.8"))
     _CASUAL_MAX_TOKENS = int(os.getenv("CASUAL_MAX_TOKENS", "200"))
@@ -183,13 +177,13 @@ class FrameworkConfig:
         "- You may respond in the same language the user uses (English, Tagalog, etc.)."
     )
 
-    ## @const_ Legal Retrieval (RAG) Module Configuration
+    ## @const_ _RETRIEVAL_MODEL : Legal Retrieval (RAG) settings.
     _RETRIEVAL_MODEL = os.getenv("RETRIEVAL_MODEL", "sentence-transformers/all-mpnet-base-v2")
     _RETRIEVAL_TOP_K = int(os.getenv("RETRIEVAL_TOP_K", "5"))
     _RETRIEVAL_CHUNK_SIZE = int(os.getenv("RETRIEVAL_CHUNK_SIZE", "5000"))
     _RETRIEVAL_CHUNK_OVERLAP = int(os.getenv("RETRIEVAL_CHUNK_OVERLAP", "300"))
     _RETRIEVAL_SCORE_THRESHOLD = float(os.getenv("RETRIEVAL_SCORE_THRESHOLD", "0.0"))
     
-    ## @const_ Pre-built Index Paths (Optional)
+    ## @const_ _RETRIEVAL_INDEX_PATH : Paths for vector store persistence.
     _RETRIEVAL_INDEX_PATH = os.getenv("RETRIEVAL_INDEX_PATH", None)
     _RETRIEVAL_CHUNKS_PATH = os.getenv("RETRIEVAL_CHUNKS_PATH", None)

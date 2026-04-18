@@ -1,3 +1,9 @@
+## Saint Louis University
+## Team 404FoundUs
+## @file tests/test_emb.py
+## @project_ LLM Legal Adaptive Routing Framework
+## @desc_ Multi-model embedding endpoint validation test.
+
 import os
 import requests
 from dotenv import load_dotenv
@@ -18,6 +24,7 @@ models = [
     "openai/text-embedding-3-small"
 ]
 
+## @iter_ models : Validating each embedding model endpoint
 for m in models:
     payload = {
         "model": m,
