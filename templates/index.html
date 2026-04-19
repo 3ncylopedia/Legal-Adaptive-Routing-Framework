@@ -1,327 +1,458 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agapay AI — Legal Routing Framework</title>
-    <meta name="description" content="AI-powered legal information assistant for OFWs">
+    <title>Agapay AI Studio — Legal Adaptive Routing Framework</title>
+    <meta name="description" content="AI Studio interface for the Legal Adaptive Routing Framework — OFW legal information assistant">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
-
 <body>
-    <div class="app-wrapper">
-        <!-- Main Application Area -->
-        <main class="chat-container">
-            <header class="chat-header">
-                <div class="header-content">
-                    <div class="header-top">
-                        <h1>Agapay AI</h1>
-                        <span class="pro-badge">SLU 404FoundUs</span>
-                        <div id="sync-status-container" class="sync-status-container" title="Checking index sync...">
-                            <span class="status-dot gray"></span>
-                            <span class="status-text">Checking Index...</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="header-actions" style="display:flex; gap: 8px;">
-                    <button class="theme-btn" id="theme-btn" aria-label="Toggle Theme">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path class="moon-icon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                        </svg>
-                    </button>
-                    <button class="settings-btn" id="settings-btn" aria-label="Settings">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
-                        </svg>
-                    </button>
-                </div>
-            </header>
+    <div class="app-layout">
 
-            <div class="chat-history-container">
-                <div class="chat-history" id="chat-history">
-                    <div class="welcome-section">
+        <!-- ==================== HEADER ==================== -->
+        <header class="app-header">
+            <div class="header-left">
+                <button class="icon-btn" id="sidebar-toggle-btn" aria-label="Toggle sidebar" title="Toggle Sidebar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                </button>
+                <span class="logo">Agapay AI Studio</span>
+                <span class="badge">SLU 404FoundUs</span>
+            </div>
+            <div class="header-center">
+                <div class="sync-badge" id="sync-status" title="Checking index...">
+                    <span class="sync-dot gray" id="sync-dot"></span>
+                    <span id="sync-text">Checking Index...</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="icon-btn" id="theme-btn" aria-label="Toggle Theme" title="Toggle Theme">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path id="theme-icon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+                <button class="icon-btn" id="panel-toggle-btn" aria-label="Toggle Panel" title="Config & Logs Panel">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <path d="M15 3v18"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==================== LEFT SIDEBAR ==================== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-section">
+                <button class="sidebar-btn primary" id="new-chat-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    New Chat
+                </button>
+            </div>
+            <div class="sidebar-section">
+                <button class="sidebar-btn" id="save-chat-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Save Conversation
+                </button>
+                <button class="sidebar-btn" id="load-file-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Load from File
+                </button>
+                <input type="file" id="load-file-input" class="file-input-hidden" accept=".json">
+            </div>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Saved Conversations</div>
+            </div>
+            <div class="conversations-list" id="conversations-list">
+                <!-- Populated via JS -->
+            </div>
+        </aside>
+
+        <!-- ==================== MAIN CHAT AREA ==================== -->
+        <main class="main-chat">
+            <div class="chat-scroll" id="chat-scroll">
+                <div class="chat-messages" id="chat-messages">
+                    <!-- Welcome Screen -->
+                    <div class="welcome-screen" id="welcome-screen">
+                        <div class="welcome-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                        </div>
                         <h2>Saan ako makakatulong, OFW?</h2>
+                        <p>Ask me anything about Philippine & Hong Kong labor laws, migrant worker rights, and legal procedures.</p>
                         <div class="welcome-hints">
-                            <button class="hint-card" onclick="sendPreset('What are my rights as an OFW in Hong Kong?')">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
-                                <span>Learn about your basic rights in HK</span>
+                            <button class="hint-chip" onclick="sendPreset('What are my rights as an OFW in Hong Kong?')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+                                OFW rights in HK
                             </button>
-                            <button class="hint-card" onclick="sendPreset('What is the minimum wage for domestic helpers?')">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                                <span>Check the latest wage and salary policies</span>
+                            <button class="hint-chip" onclick="sendPreset('What is the minimum wage for domestic helpers?')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                Minimum wage policies
                             </button>
-                            <button class="hint-card" onclick="sendPreset('My employer did not pay me for 2 months, what should I do?')">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>
-                                <span>Resolve disputes involving unpaid wages</span>
+                            <button class="hint-chip" onclick="sendPreset('My employer did not pay me for 2 months, what should I do?')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                Unpaid wages dispute
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Sleek Input Area -->
-            <div class="input-area-wrapper">
-                <div class="input-container">
-                    <form id="chat-form">
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <form class="input-box" id="chat-form">
                         <textarea id="user-input" placeholder="Ask anything about legal concerns..." rows="1"></textarea>
-                        <button type="submit" id="send-btn" aria-label="Ask">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <button type="submit" class="send-btn" id="send-btn" aria-label="Send">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/>
                             </svg>
                         </button>
                     </form>
+                    <div class="input-disclaimer">Agapay AI generates responses that may contain errors. Always consult a real lawyer for official advice.</div>
                 </div>
-                <div class="disclaimer">Agapay AI generates responses that may contain errors. Always consult a real lawyer for official advice.</div>
             </div>
         </main>
+
+        <!-- ==================== RIGHT PANEL ==================== -->
+        <aside class="right-panel" id="right-panel">
+            <!-- Panel Tabs -->
+            <div class="panel-tabs">
+                <button class="panel-tab active" data-tab="config-tab">Configuration</button>
+                <button class="panel-tab" data-tab="logs-tab">Logs</button>
+            </div>
+
+            <!-- CONFIG TAB -->
+            <div class="panel-content active" id="config-tab">
+                <!-- API Key -->
+                <div class="api-key-section">
+                    <div class="cfg-group">
+                        <label>OpenRouter API Key</label>
+                        <div class="api-key-input-wrapper">
+                            <input type="password" id="cfg_api_key" placeholder="sk-or-v1-..." autocomplete="off">
+                            <button type="button" class="api-key-toggle" onclick="toggleApiKeyVisibility()" title="Show/Hide">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-panel" id="config-panel">
+                    <!-- Triage Module -->
+                    <div class="config-section open" data-module="triage">
+                        <div class="config-section-header" onclick="toggleConfigSection(this)">
+                            <h3>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                Triage Module
+                            </h3>
+                            <span class="chevron">▶</span>
+                        </div>
+                        <div class="config-section-body">
+                            <div class="cfg-group">
+                                <label>Model</label>
+                                <input type="text" id="cfg_triage_model">
+                            </div>
+                            <div class="cfg-row">
+                                <div class="cfg-group">
+                                    <label>Temperature</label>
+                                    <input type="number" step="0.1" min="0" max="2" id="cfg_triage_temp">
+                                </div>
+                                <div class="cfg-group">
+                                    <label>Max Tokens</label>
+                                    <input type="number" min="1" id="cfg_triage_max_tokens">
+                                </div>
+                            </div>
+                            <div class="toggle-row">
+                                <label>Use System Prompt</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="cfg_triage_use_system">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="toggle-row">
+                                <label>Enable Reasoning</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="cfg_triage_reasoning">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="cfg-group" style="margin-top:8px">
+                                <label>System Instructions</label>
+                                <textarea class="system-prompt-editor" id="cfg_triage_instructions" spellcheck="false"></textarea>
+                                <div class="char-count" id="cc_triage">0 chars</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Router Module -->
+                    <div class="config-section" data-module="router">
+                        <div class="config-section-header" onclick="toggleConfigSection(this)">
+                            <h3>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+                                Router Module
+                            </h3>
+                            <span class="chevron">▶</span>
+                        </div>
+                        <div class="config-section-body">
+                            <div class="cfg-group">
+                                <label>Model</label>
+                                <input type="text" id="cfg_router_model">
+                            </div>
+                            <div class="cfg-row">
+                                <div class="cfg-group">
+                                    <label>Temperature</label>
+                                    <input type="number" step="0.1" min="0" max="2" id="cfg_router_temp">
+                                </div>
+                                <div class="cfg-group">
+                                    <label>Max Tokens</label>
+                                    <input type="number" min="1" id="cfg_router_max_tokens">
+                                </div>
+                            </div>
+                            <div class="toggle-row">
+                                <label>Use System Prompt</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="cfg_router_use_system">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="toggle-row">
+                                <label>Enable Reasoning</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="cfg_router_reasoning">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- General Module -->
+                    <div class="config-section" data-module="general">
+                        <div class="config-section-header" onclick="toggleConfigSection(this)">
+                            <h3>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                General Response
+                            </h3>
+                            <span class="chevron">▶</span>
+                        </div>
+                        <div class="config-section-body">
+                            <div class="cfg-group">
+                                <label>Model</label>
+                                <input type="text" id="cfg_general_model">
+                            </div>
+                            <div class="cfg-row">
+                                <div class="cfg-group">
+                                    <label>Temperature</label>
+                                    <input type="number" step="0.1" min="0" max="2" id="cfg_general_temp">
+                                </div>
+                                <div class="cfg-group">
+                                    <label>Max Tokens</label>
+                                    <input type="number" min="1" id="cfg_general_max_tokens">
+                                </div>
+                            </div>
+                            <div class="toggle-row">
+                                <label>Use System Prompt</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="cfg_general_use_system">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="toggle-row">
+                                <label>Enable Reasoning</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="cfg_general_reasoning">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="cfg-group" style="margin-top:8px">
+                                <label>System Instructions</label>
+                                <textarea class="system-prompt-editor" id="cfg_general_instructions" spellcheck="false"></textarea>
+                                <div class="char-count" id="cc_general">0 chars</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reasoning Module -->
+                    <div class="config-section" data-module="reasoning">
+                        <div class="config-section-header" onclick="toggleConfigSection(this)">
+                            <h3>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 14 18.469V19a2 2 0 1 1-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                                Reasoning (Legal Logic)
+                            </h3>
+                            <span class="chevron">▶</span>
+                        </div>
+                        <div class="config-section-body">
+                            <div class="cfg-group">
+                                <label>Model</label>
+                                <input type="text" id="cfg_reasoning_model">
+                            </div>
+                            <div class="cfg-row">
+                                <div class="cfg-group">
+                                    <label>Temperature</label>
+                                    <input type="number" step="0.1" min="0" max="2" id="cfg_reasoning_temp">
+                                </div>
+                                <div class="cfg-group">
+                                    <label>Max Tokens</label>
+                                    <input type="number" min="1" id="cfg_reasoning_max_tokens">
+                                </div>
+                            </div>
+                            <div class="toggle-row">
+                                <label>Use System Prompt</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="cfg_reasoning_use_system">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="toggle-row">
+                                <label>Enable Reasoning</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="cfg_reasoning_reasoning">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="cfg-group" style="margin-top:8px">
+                                <label>System Instructions</label>
+                                <textarea class="system-prompt-editor" id="cfg_reasoning_instructions" spellcheck="false"></textarea>
+                                <div class="char-count" id="cc_reasoning">0 chars</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Casual Module -->
+                    <div class="config-section" data-module="casual">
+                        <div class="config-section-header" onclick="toggleConfigSection(this)">
+                            <h3>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                Casual Response
+                            </h3>
+                            <span class="chevron">▶</span>
+                        </div>
+                        <div class="config-section-body">
+                            <div class="cfg-group">
+                                <label>Model</label>
+                                <input type="text" id="cfg_casual_model">
+                            </div>
+                            <div class="cfg-row">
+                                <div class="cfg-group">
+                                    <label>Temperature</label>
+                                    <input type="number" step="0.1" min="0" max="2" id="cfg_casual_temp">
+                                </div>
+                                <div class="cfg-group">
+                                    <label>Max Tokens</label>
+                                    <input type="number" min="1" id="cfg_casual_max_tokens">
+                                </div>
+                            </div>
+                            <div class="toggle-row">
+                                <label>Use System Prompt</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="cfg_casual_use_system">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="toggle-row">
+                                <label>Enable Reasoning</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="cfg_casual_reasoning">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="cfg-group" style="margin-top:8px">
+                                <label>System Instructions</label>
+                                <textarea class="system-prompt-editor" id="cfg_casual_instructions" spellcheck="false"></textarea>
+                                <div class="char-count" id="cc_casual">0 chars</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Config Action Buttons -->
+                <div class="config-actions">
+                    <button class="btn btn-ghost" id="export-config-btn" title="Export as .config file">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Export
+                    </button>
+                    <button class="btn btn-ghost" id="import-config-btn" title="Import .config file">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Import
+                    </button>
+                    <input type="file" id="import-config-input" class="file-input-hidden" accept=".config,.json">
+                    <button class="btn btn-primary" id="save-config-btn">Save Config</button>
+                </div>
+            </div>
+
+            <!-- LOGS TAB -->
+            <div class="panel-content" id="logs-tab">
+                <div class="logs-panel">
+                    <div class="logs-toolbar">
+                        <div class="log-status">
+                            <span class="log-status-dot" id="log-status-dot"></span>
+                            <span id="log-status-text">Connecting...</span>
+                        </div>
+                        <button class="icon-btn" id="clear-logs-btn" title="Clear Logs">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </div>
+                    <div class="logs-content" id="logs-content">
+                        <!-- Log lines injected via JS -->
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ==================== STATUS BAR ==================== -->
+        <footer class="status-bar">
+            <div class="status-item">
+                <span class="label">Session:</span>
+                <span class="value" id="status-session">None</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Route:</span>
+                <span class="value" id="status-route">—</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Messages:</span>
+                <span class="value" id="status-msg-count">0</span>
+            </div>
+        </footer>
+
     </div>
 
-    <!-- Configuration Modal -->
-    <div id="config-modal" class="modal-overlay hidden">
-        <div class="modal-container config-modal">
-            <div class="modal-header">
-                <h2>Framework Configuration</h2>
-                <button id="close-config-btn" class="close-btn" aria-label="Close modal">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 6L6 18M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="config-form">
-                    <div class="form-group">
-                        <label>OpenRouter API Key</label>
-                        <input type="password" id="input_api_key" autocomplete="off" placeholder="sk-or-v1-...">
-                    </div>
-                    <!-- Triage Setup -->
-                    <h3 class="form-section-title">Triage Options</h3>
-                    <div class="form-row">
-                        <div class="form-group" style="flex:2">
-                            <label>Triage Model</label>
-                            <input type="text" id="input_triage_model">
-                        </div>
-                        <div class="form-group">
-                            <label>Temp</label>
-                            <input type="number" step="0.1" id="input_triage_temp">
-                        </div>
-                        <div class="form-group">
-                            <label>Tokens</label>
-                            <input type="number" id="input_triage_max_tokens">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Use System Prompt?</label>
-                            <select id="input_triage_use_system">
-                                <option value="true">Yes</option>
-                                <option value="false">No</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Enable Reasoning Output?</label>
-                            <select id="input_triage_reasoning">
-                                <option value="true">Yes</option>
-                                <option value="false">No</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>System Instructions</label>
-                        <textarea id="input_triage_instructions"></textarea>
-                    </div>
-                    <!-- Router Setup -->
-                    <h3 class="form-section-title">Router Options</h3>
-                    <div class="form-row">
-                        <div class="form-group" style="flex:2">
-                            <label>Router Model</label>
-                            <input type="text" id="input_router_model">
-                        </div>
-                        <div class="form-group">
-                            <label>Temp</label>
-                            <input type="number" step="0.1" id="input_router_temp">
-                        </div>
-                        <div class="form-group">
-                            <label>Tokens</label>
-                            <input type="number" id="input_router_max_tokens">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Use System Prompt?</label>
-                            <select id="input_router_use_system">
-                                <option value="true">Yes</option>
-                                <option value="false">No</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Enable Reasoning Output?</label>
-                            <select id="input_router_reasoning">
-                                <option value="true">Yes</option>
-                                <option value="false">No</option>
-                            </select>
-                        </div>
-                    </div>
-                    <!-- Reasoning Logic Setup -->
-                    <h3 class="form-section-title">Reasoning (Legal Logic) Settings</h3>
-                    <div class="form-row">
-                        <div class="form-group" style="flex:2">
-                            <label>Reasoning Model</label>
-                            <input type="text" id="input_reasoning_model">
-                        </div>
-                        <div class="form-group">
-                            <label>Temp</label>
-                            <input type="number" step="0.1" id="input_reasoning_temp">
-                        </div>
-                        <div class="form-group">
-                            <label>Tokens</label>
-                            <input type="number" id="input_reasoning_max_tokens">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Use System Prompt?</label>
-                            <select id="input_reasoning_use_system">
-                                <option value="true">Yes</option>
-                                <option value="false">No</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Enable Reasoning Output?</label>
-                            <select id="input_reasoning_reasoning">
-                                <option value="true">Yes</option>
-                                <option value="false">No</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>System Instructions</label>
-                        <textarea id="input_reasoning_instructions"></textarea>
-                    </div>
-                    <!-- General Setup -->
-                    <h3 class="form-section-title">General Response Settings</h3>
-                    <div class="form-row">
-                        <div class="form-group" style="flex:2">
-                            <label>General Model</label>
-                            <input type="text" id="input_general_model">
-                        </div>
-                        <div class="form-group">
-                            <label>Temp</label>
-                            <input type="number" step="0.1" id="input_general_temp">
-                        </div>
-                        <div class="form-group">
-                            <label>Tokens</label>
-                            <input type="number" id="input_general_max_tokens">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Use System Prompt?</label>
-                            <select id="input_general_use_system">
-                                <option value="true">Yes</option>
-                                <option value="false">No</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Enable Reasoning Output?</label>
-                            <select id="input_general_reasoning">
-                                <option value="true">Yes</option>
-                                <option value="false">No</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>System Instructions</label>
-                        <textarea id="input_general_instructions"></textarea>
-                    </div>
-                    <!-- Casual Setup -->
-                    <h3 class="form-section-title">Casual Options</h3>
-                    <div class="form-row">
-                        <div class="form-group" style="flex:2">
-                            <label>Casual Model</label>
-                            <input type="text" id="input_casual_model">
-                        </div>
-                        <div class="form-group">
-                            <label>Temp</label>
-                            <input type="number" step="0.1" id="input_casual_temp">
-                        </div>
-                        <div class="form-group">
-                            <label>Tokens</label>
-                            <input type="number" id="input_casual_max_tokens">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Use System Prompt?</label>
-                            <select id="input_casual_use_system">
-                                <option value="true">Yes</option>
-                                <option value="false">No</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Enable Reasoning Output?</label>
-                            <select id="input_casual_reasoning">
-                                <option value="true">Yes</option>
-                                <option value="false">No</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>System Instructions</label>
-                        <textarea id="input_casual_instructions"></textarea>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="primary-btn">Save Configuration</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    <!-- ==================== MODALS ==================== -->
 
     <!-- RAG Detail Modal -->
     <div id="rag-modal" class="modal-overlay hidden">
-        <div class="modal-container">
+        <div class="modal-box" style="max-width:640px">
             <div class="modal-header">
                 <h2>Retrieved Legal Sources</h2>
-                <button id="close-rag-btn" class="close-btn" aria-label="Close modal">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 6L6 18M6 6l12 12"/>
-                    </svg>
+                <button class="modal-close" onclick="closeModal('rag-modal')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
             </div>
-            <div class="modal-body" id="modal-rag-content">
-                <!-- Chunks injected here via JS -->
+            <div class="modal-body" id="rag-modal-body">
             </div>
         </div>
     </div>
 
-    <!-- Details Modal (for Triage/Router diagnostics) -->
+    <!-- Details Modal (Triage/Router diagnostics) -->
     <div id="details-modal" class="modal-overlay hidden">
-        <div class="modal-container">
+        <div class="modal-box">
             <div class="modal-header">
                 <h2 id="details-modal-title">Module Details</h2>
-                <button id="close-details-btn" class="close-btn" aria-label="Close modal">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 6L6 18M6 6l12 12"/>
-                    </svg>
+                <button class="modal-close" onclick="closeModal('details-modal')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
             </div>
-            <div class="modal-body">
-                <div id="details-modal-content" class="details-table-container">
-                    <!-- Data injected here via JS -->
-                </div>
+            <div class="modal-body" id="details-modal-body">
             </div>
         </div>
     </div>
 
-    <!-- CDNs for robust Markdown Rendering -->
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- CDNs for Markdown Rendering -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
-
 </html>

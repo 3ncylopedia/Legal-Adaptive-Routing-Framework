@@ -1,323 +1,351 @@
 /* =============================================
-   Agapay AI — Perplexity-Style Client Script
+   Agapay AI Studio — Client Application
    ============================================= */
 
-// DOM Elements
-const chatForm = document.getElementById('chat-form');
-const userInput = document.getElementById('user-input');
-const chatHistory = document.getElementById('chat-history');
-const settingsBtn = document.getElementById('settings-btn');
-const configModal = document.getElementById('config-modal');
-const closeConfigBtn = document.getElementById('close-config-btn');
-const configForm = document.getElementById('config-form');
+// =============================================
+// DOM Cache
+// =============================================
+const DOM = {
+    chatForm: document.getElementById('chat-form'),
+    userInput: document.getElementById('user-input'),
+    sendBtn: document.getElementById('send-btn'),
+    chatMessages: document.getElementById('chat-messages'),
+    chatScroll: document.getElementById('chat-scroll'),
+    welcomeScreen: document.getElementById('welcome-screen'),
+    // Header
+    themeBtn: document.getElementById('theme-btn'),
+    themeIcon: document.getElementById('theme-icon'),
+    sidebarToggle: document.getElementById('sidebar-toggle-btn'),
+    panelToggle: document.getElementById('panel-toggle-btn'),
+    // Sync
+    syncDot: document.getElementById('sync-dot'),
+    syncText: document.getElementById('sync-text'),
+    syncStatus: document.getElementById('sync-status'),
+    // Sidebar
+    sidebar: document.getElementById('sidebar'),
+    newChatBtn: document.getElementById('new-chat-btn'),
+    saveChatBtn: document.getElementById('save-chat-btn'),
+    loadFileBtn: document.getElementById('load-file-btn'),
+    loadFileInput: document.getElementById('load-file-input'),
+    convoList: document.getElementById('conversations-list'),
+    // Right Panel
+    rightPanel: document.getElementById('right-panel'),
+    configPanel: document.getElementById('config-panel'),
+    // Config Actions
+    saveConfigBtn: document.getElementById('save-config-btn'),
+    exportConfigBtn: document.getElementById('export-config-btn'),
+    importConfigBtn: document.getElementById('import-config-btn'),
+    importConfigInput: document.getElementById('import-config-input'),
+    // Logs
+    logsContent: document.getElementById('logs-content'),
+    logStatusDot: document.getElementById('log-status-dot'),
+    logStatusText: document.getElementById('log-status-text'),
+    clearLogsBtn: document.getElementById('clear-logs-btn'),
+    // Status Bar
+    statusSession: document.getElementById('status-session'),
+    statusRoute: document.getElementById('status-route'),
+    statusMsgCount: document.getElementById('status-msg-count'),
+    // Modals
+    ragModal: document.getElementById('rag-modal'),
+    ragModalBody: document.getElementById('rag-modal-body'),
+    detailsModal: document.getElementById('details-modal'),
+    detailsModalTitle: document.getElementById('details-modal-title'),
+    detailsModalBody: document.getElementById('details-modal-body'),
+    // Toast
+    toastContainer: document.getElementById('toast-container'),
+};
 
-let isProcessing = false;
-let currentSessionId = null;
-window.currentRagChunks = []; // Global to store chunks for the modal
+// =============================================
+// State
+// =============================================
+let state = {
+    isProcessing: false,
+    sessionId: null,
+    currentRoute: null,
+    messageCount: 0,
+    currentRagChunks: [],
+    chatHistory: [], // local mirror for save/load
+};
 
-/**
- * Update the UI to reflect the current sync status of the legal index.
- */
+// =============================================
+// 1. Theme Manager
+// =============================================
+const MOON_PATH = "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z";
+const SUN_PATH = "M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z";
+
+function initTheme() {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light') {
+        document.body.setAttribute('data-theme', 'light');
+        DOM.themeIcon.setAttribute('d', SUN_PATH);
+    }
+    // default is dark (no data-theme attr needed)
+}
+
+DOM.themeBtn.addEventListener('click', () => {
+    if (document.body.getAttribute('data-theme') === 'light') {
+        document.body.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'dark');
+        DOM.themeIcon.setAttribute('d', MOON_PATH);
+    } else {
+        document.body.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+        DOM.themeIcon.setAttribute('d', SUN_PATH);
+    }
+});
+
+initTheme();
+
+// =============================================
+// 2. Panel Manager (sidebar / right panel toggle)
+// =============================================
+DOM.sidebarToggle.addEventListener('click', () => {
+    DOM.sidebar.classList.toggle('force-show');
+});
+
+DOM.panelToggle.addEventListener('click', () => {
+    DOM.rightPanel.classList.toggle('force-show');
+});
+
+// Panel tab switching
+document.querySelectorAll('.panel-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+    });
+});
+
+// Config section collapse/expand
+window.toggleConfigSection = function(headerEl) {
+    headerEl.closest('.config-section').classList.toggle('open');
+};
+
+// =============================================
+// 3. Sync Status
+// =============================================
 async function updateSyncStatus() {
-    const container = document.getElementById('sync-status-container');
-    const dot = container.querySelector('.status-dot');
-    const text = container.querySelector('.status-text');
-
     try {
         const res = await fetch('/api/sync-status');
         const data = await res.json();
-
         if (data.is_synced) {
-            dot.className = 'status-dot green';
-            text.innerText = 'Index Synced';
-            container.title = `Index is up to date with ${data.corpus_count} documents.`;
+            DOM.syncDot.className = 'sync-dot green';
+            DOM.syncText.textContent = 'Index Synced';
+            DOM.syncStatus.title = `Index up to date with ${data.corpus_count} documents.`;
         } else {
-            dot.className = 'status-dot yellow';
-            text.innerText = `Out of Sync (${data.missing_count})`;
-            container.title = `${data.missing_count} documents are missing from the index. Run -reindex in CLI.`;
+            DOM.syncDot.className = 'sync-dot yellow';
+            DOM.syncText.textContent = `Out of Sync (${data.missing_count})`;
+            DOM.syncStatus.title = `${data.missing_count} documents missing from index.`;
         }
-    } catch (e) {
-        dot.className = 'status-dot red';
-        text.innerText = 'Sync Error';
-        container.title = 'Failed to fetch index sync status.';
+    } catch {
+        DOM.syncDot.className = 'sync-dot red';
+        DOM.syncText.textContent = 'Sync Error';
+        DOM.syncStatus.title = 'Failed to fetch sync status.';
     }
 }
-
-// Initial check
 updateSyncStatus();
 
 // =============================================
-// Settings Modal & Theme Logic
+// 4. Toast Notifications
 // =============================================
-const themeBtn = document.getElementById('theme-btn');
-const moonIconPath = "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"; // Moon
-const sunIconPath = "M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"; // Sun
-
-// Initialize theme from storage
-if(localStorage.getItem('theme') === 'dark') {
-    document.body.setAttribute('data-theme', 'dark');
-    themeBtn.querySelector('path').setAttribute('d', sunIconPath);
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    DOM.toastContainer.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
 }
 
-themeBtn.addEventListener('click', () => {
-    if(document.body.getAttribute('data-theme') === 'dark') {
-        document.body.removeAttribute('data-theme');
-        localStorage.setItem('theme', 'light');
-        themeBtn.querySelector('path').setAttribute('d', moonIconPath);
-    } else {
-        document.body.setAttribute('data-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
-        themeBtn.querySelector('path').setAttribute('d', sunIconPath);
-    }
-});
-
-settingsBtn.addEventListener('click', async () => {
-    configModal.classList.remove('hidden');
-    // Fetch current settings
-    try {
-        const res = await fetch('/api/config');
-        const data = await res.json();
-        document.getElementById('input_api_key').value = data.api_key || '';
-
-        // Triage
-        document.getElementById('input_triage_model').value = data.triage_model || '';
-        document.getElementById('input_triage_temp').value = data.triage_temp || 0;
-        document.getElementById('input_triage_max_tokens').value = data.triage_max_tokens || 1000;
-        document.getElementById('input_triage_use_system').value = data.triage_use_system ? "true" : "false";
-        document.getElementById('input_triage_reasoning').value = data.triage_reasoning ? "true" : "false";
-        document.getElementById('input_triage_instructions').value = data.triage_instructions || '';
-        
-        // Router
-        document.getElementById('input_router_model').value = data.router_model || '';
-        document.getElementById('input_router_temp').value = data.router_temp || 0;
-        document.getElementById('input_router_max_tokens').value = data.router_max_tokens || 1000;
-        document.getElementById('input_router_use_system').value = data.router_use_system ? "true" : "false";
-        document.getElementById('input_router_reasoning').value = data.router_reasoning ? "true" : "false";
-
-        // Reasoning
-        document.getElementById('input_reasoning_model').value = data.reasoning_model || '';
-        document.getElementById('input_reasoning_temp').value = data.reasoning_temp || 0;
-        document.getElementById('input_reasoning_max_tokens').value = data.reasoning_max_tokens || 2000;
-        document.getElementById('input_reasoning_use_system').value = data.reasoning_use_system ? "true" : "false";
-        document.getElementById('input_reasoning_reasoning').value = data.reasoning_reasoning ? "true" : "false";
-        document.getElementById('input_reasoning_instructions').value = data.reasoning_instructions || '';
-        
-        // General
-        document.getElementById('input_general_model').value = data.general_model || '';
-        document.getElementById('input_general_temp').value = data.general_temp || 0;
-        document.getElementById('input_general_max_tokens').value = data.general_max_tokens || 1000;
-        document.getElementById('input_general_use_system').value = data.general_use_system ? "true" : "false";
-        document.getElementById('input_general_reasoning').value = data.general_reasoning ? "true" : "false";
-        document.getElementById('input_general_instructions').value = data.general_instructions || '';
-
-        // Casual
-        document.getElementById('input_casual_model').value = data.casual_model || '';
-        document.getElementById('input_casual_temp').value = data.casual_temp || 0;
-        document.getElementById('input_casual_max_tokens').value = data.casual_max_tokens || 200;
-        document.getElementById('input_casual_use_system').value = data.casual_use_system ? "true" : "false";
-        document.getElementById('input_casual_reasoning').value = data.casual_reasoning ? "true" : "false";
-        document.getElementById('input_casual_instructions').value = data.casual_instructions || '';
-    } catch (e) {
-        console.error("Failed to load config", e);
-    }
-});
-
-closeConfigBtn.addEventListener('click', () => configModal.classList.add('hidden'));
-
-configForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const payload = {
-        api_key: document.getElementById('input_api_key').value,
-        
-        triage_model: document.getElementById('input_triage_model').value,
-        triage_temp: parseFloat(document.getElementById('input_triage_temp').value),
-        triage_max_tokens: parseInt(document.getElementById('input_triage_max_tokens').value) || 1000,
-        triage_use_system: document.getElementById('input_triage_use_system').value === "true",
-        triage_reasoning: document.getElementById('input_triage_reasoning').value === "true",
-        triage_instructions: document.getElementById('input_triage_instructions').value,
-        
-        router_model: document.getElementById('input_router_model').value,
-        router_temp: parseFloat(document.getElementById('input_router_temp').value),
-        router_max_tokens: parseInt(document.getElementById('input_router_max_tokens').value) || 1000,
-        router_use_system: document.getElementById('input_router_use_system').value === "true",
-        router_reasoning: document.getElementById('input_router_reasoning').value === "true",
-        
-        reasoning_model: document.getElementById('input_reasoning_model').value,
-        reasoning_temp: parseFloat(document.getElementById('input_reasoning_temp').value),
-        reasoning_max_tokens: parseInt(document.getElementById('input_reasoning_max_tokens').value) || 2000,
-        reasoning_use_system: document.getElementById('input_reasoning_use_system').value === "true",
-        reasoning_reasoning: document.getElementById('input_reasoning_reasoning').value === "true",
-        reasoning_instructions: document.getElementById('input_reasoning_instructions').value,
-        
-        general_model: document.getElementById('input_general_model').value,
-        general_temp: parseFloat(document.getElementById('input_general_temp').value),
-        general_max_tokens: parseInt(document.getElementById('input_general_max_tokens').value) || 1000,
-        general_use_system: document.getElementById('input_general_use_system').value === "true",
-        general_reasoning: document.getElementById('input_general_reasoning').value === "true",
-        general_instructions: document.getElementById('input_general_instructions').value,
-        
-        casual_model: document.getElementById('input_casual_model').value,
-        casual_temp: parseFloat(document.getElementById('input_casual_temp').value),
-        casual_max_tokens: parseInt(document.getElementById('input_casual_max_tokens').value) || 200,
-        casual_use_system: document.getElementById('input_casual_use_system').value === "true",
-        casual_reasoning: document.getElementById('input_casual_reasoning').value === "true",
-        casual_instructions: document.getElementById('input_casual_instructions').value,
-    };
-
-    const submitBtn = configForm.querySelector('button[type="submit"]');
-    const ogText = submitBtn.innerText;
-    submitBtn.innerText = "Saving...";
-    
-    try {
-        await fetch('/api/config', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
-        });
-        setTimeout(() => {
-            submitBtn.innerText = "Saved!";
-            setTimeout(() => {
-                submitBtn.innerText = ogText;
-                configModal.classList.add('hidden');
-            }, 1000);
-        }, 500);
-    } catch (e) {
-        console.error("Save config failed", e);
-        submitBtn.innerText = ogText;
-    }
-});
-
 // =============================================
-// RAG Modal & Citations Logic
+// 5. Modal Helpers
 // =============================================
-const ragModal = document.getElementById('rag-modal');
-const closeRagBtn = document.getElementById('close-rag-btn');
-const modalRagContent = document.getElementById('modal-rag-content');
-
-window.openRagModal = function(index = null) {
-    if (!ragModal || !window.currentRagChunks) return;
-    
-    // Build content
-    let html = '';
-    window.currentRagChunks.forEach((chunk, i) => {
-        // If an index was provided by citation click, highlight it
-        const isHighlight = (index !== null && parseInt(index) === (i + 1));
-        html += `
-        <div style="padding: 12px; margin-bottom: 12px; border: 1px solid ${isHighlight ? 'var(--accent-blue)' : 'var(--border-subtle)'}; border-radius: var(--radius-sm); background: ${isHighlight ? 'rgba(37,99,235,0.05)' : 'var(--chat-bg)'}">
-            <h4 style="margin-bottom: 6px; font-size: 0.95rem;">Source [${i + 1}]</h4>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); white-space: pre-wrap;">${chunk.text}</p>
-        </div>`;
-    });
-    
-    if(html === '') html = '<p>No legal sources were retrieved for this query.</p>';
-    modalRagContent.innerHTML = html;
-    ragModal.classList.remove('hidden');
+window.closeModal = function(id) {
+    document.getElementById(id).classList.add('hidden');
 };
 
-if(closeRagBtn) {
-    closeRagBtn.addEventListener('click', () => ragModal.classList.add('hidden'));
-}
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.classList.add('hidden');
+    });
+});
 
-// =============================================
-// Module Details Modal Logic
-// =============================================
-const detailsModal = document.getElementById('details-modal');
-const closeDetailsBtn = document.getElementById('close-details-btn');
-const modalDetailsContent = document.getElementById('details-modal-content');
-const modalDetailsTitle = document.getElementById('details-modal-title');
+window.openRagModal = function(index) {
+    if (!state.currentRagChunks.length) return;
+    const frag = document.createDocumentFragment();
+    state.currentRagChunks.forEach((chunk, i) => {
+        const isHighlight = (index !== undefined && parseInt(index) === (i + 1));
+        const card = document.createElement('div');
+        card.className = `rag-source${isHighlight ? ' highlight' : ''}`;
+        card.innerHTML = `<h4>Source [${i + 1}]</h4><p>${escapeHtml(chunk.text)}</p>`;
+        frag.appendChild(card);
+    });
+    DOM.ragModalBody.innerHTML = '';
+    DOM.ragModalBody.appendChild(frag);
+    DOM.ragModal.classList.remove('hidden');
+};
 
 window.openDetailsModal = function(title, dataStr) {
-    if (!detailsModal) return;
     const data = JSON.parse(decodeURIComponent(dataStr));
-    
-    modalDetailsTitle.innerText = title;
-    
+    DOM.detailsModalTitle.textContent = title;
     let html = '<table class="details-table">';
     for (const [key, value] of Object.entries(data)) {
-        html += `
-        <tr>
-            <th>${key}</th>
-            <td>${typeof value === 'object' ? JSON.stringify(value, null, 2) : value}</td>
-        </tr>`;
+        html += `<tr><th>${escapeHtml(key)}</th><td>${typeof value === 'object' ? escapeHtml(JSON.stringify(value, null, 2)) : escapeHtml(String(value))}</td></tr>`;
     }
     html += '</table>';
-    
-    modalDetailsContent.innerHTML = html;
-    detailsModal.classList.remove('hidden');
+    DOM.detailsModalBody.innerHTML = html;
+    DOM.detailsModal.classList.remove('hidden');
 };
 
-if(closeDetailsBtn) {
-    closeDetailsBtn.addEventListener('click', () => detailsModal.classList.add('hidden'));
+// =============================================
+// 6. Markdown Renderer
+// =============================================
+function renderMarkdown(text) {
+    if (!text) return '';
+    let parsed = text;
+
+    // Extract <think> blocks into collapsible details
+    parsed = parsed.replace(/<think>([\s\S]*?)<\/think>/gi, (match, inner) => {
+        return `<details class="reasoning-block"><summary>💡 View Reasoning / Thought Process</summary><div class="reasoning-content">${inner}</div></details>\n`;
+    });
+
+    // Handle streaming case: <think> present but unclosed
+    if (parsed.includes('<think>') && !parsed.includes('</think>')) {
+        parsed = parsed.replace(/<think>/gi, '<details open class="reasoning-block"><summary>💡 Thinking...</summary><div class="reasoning-content">\n');
+        parsed += '\n</div></details>';
+    }
+
+    // Convert [n] citations to clickable badges
+    parsed = parsed.replace(/\[(\d+)\]/g, '<sup class="citation" data-ref="$1">[$1]</sup>');
+
+    // Parse markdown
+    const rawHtml = marked.parse(parsed, { breaks: true, gfm: true });
+
+    // Sanitize with allowed tags
+    let clean = DOMPurify.sanitize(rawHtml, {
+        ADD_TAGS: ['details', 'summary', 'sup'],
+        ADD_ATTR: ['open', 'class', 'data-ref', 'style']
+    });
+
+    // Wrap code blocks with copy button
+    clean = clean.replace(/<pre><code(.*?)>([\s\S]*?)<\/code><\/pre>/g, (match, attrs, code) => {
+        return `<div class="code-block-wrapper"><button class="copy-code-btn" onclick="copyCodeBlock(this)">Copy</button><pre><code${attrs}>${code}</code></pre></div>`;
+    });
+
+    return clean;
 }
 
-// Delegate listener for citation clicks
-chatHistory.addEventListener('click', (e) => {
-    if (e.target.closest('.citation')) {
-        const ref = e.target.closest('.citation').getAttribute('data-ref');
-        window.openRagModal(ref);
+window.copyCodeBlock = function(btn) {
+    const code = btn.nextElementSibling.querySelector('code');
+    if (code) {
+        navigator.clipboard.writeText(code.textContent).then(() => {
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'Copy', 1500);
+        });
     }
-});
+};
+
+function escapeHtml(str) {
+    const el = document.createElement('span');
+    el.textContent = str;
+    return el.innerHTML;
+}
 
 // =============================================
-// Helper: Auto-resize textarea
+// 7. Chat Engine
 // =============================================
-userInput.addEventListener('input', function() {
-    this.style.height = 'auto';
-    this.style.height = (this.scrollHeight) + 'px';
+
+// Auto-resize textarea
+let resizeTimeout;
+DOM.userInput.addEventListener('input', function() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    }, 16);
 });
-userInput.addEventListener('keydown', function(e) {
-    if(e.key === 'Enter' && !e.shiftKey) {
+
+DOM.userInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        chatForm.dispatchEvent(new Event('submit'));
+        DOM.chatForm.dispatchEvent(new Event('submit'));
     }
 });
 
-// Preset Messages
-function sendPreset(text) {
-    if (isProcessing) return;
-    userInput.value = text;
-    chatForm.dispatchEvent(new Event('submit'));
+// Preset messages
+window.sendPreset = function(text) {
+    if (state.isProcessing) return;
+    DOM.userInput.value = text;
+    DOM.chatForm.dispatchEvent(new Event('submit'));
+};
+
+function scrollToBottom() {
+    requestAnimationFrame(() => {
+        DOM.chatScroll.scrollTop = DOM.chatScroll.scrollHeight;
+    });
 }
 
-// =============================================
-// Chat Form Handler
-// =============================================
-chatForm.addEventListener('submit', async (e) => {
+function addUserMessage(text) {
+    if (DOM.welcomeScreen) {
+        DOM.welcomeScreen.style.display = 'none';
+    }
+    const div = document.createElement('div');
+    div.className = 'message user';
+    div.innerHTML = `<div class="msg-bubble user-bubble">${escapeHtml(text)}</div>`;
+    DOM.chatMessages.appendChild(div);
+    
+    state.chatHistory.push({ role: 'user', content: text });
+    state.messageCount++;
+    DOM.statusMsgCount.textContent = state.messageCount;
+    scrollToBottom();
+}
+
+function updateStatusBar() {
+    DOM.statusSession.textContent = state.sessionId ? state.sessionId.substring(0, 8) + '...' : 'None';
+    DOM.statusRoute.textContent = state.currentRoute || '—';
+    DOM.statusMsgCount.textContent = state.messageCount;
+}
+
+// Citation click delegation
+DOM.chatMessages.addEventListener('click', (e) => {
+    const citation = e.target.closest('.citation');
+    if (citation) {
+        window.openRagModal(citation.dataset.ref);
+    }
+});
+
+// Main chat submit handler
+DOM.chatForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const message = userInput.value.trim();
-    if (!message || isProcessing) return;
+    const message = DOM.userInput.value.trim();
+    if (!message || state.isProcessing) return;
 
-    // Clear welcome hints
-    const welcome = document.querySelector('.welcome-section');
-    if (welcome) welcome.style.display = 'none';
+    addUserMessage(message);
+    DOM.userInput.value = '';
+    DOM.userInput.style.height = 'auto';
+    state.isProcessing = true;
+    DOM.sendBtn.disabled = true;
 
-    // Add user message
-    addMessage(message, 'user');
-    userInput.value = '';
-    userInput.style.height = 'auto';
-    isProcessing = true;
+    // Create assistant message container
+    const assistantDiv = document.createElement('div');
+    assistantDiv.className = 'message assistant';
 
-    // Add system placeholder
-    const assistantContainer = document.createElement('div');
-    assistantContainer.className = 'message system';
-    
-    // Create inline pipeline container inside the assistant bubble
     const pipelineDiv = document.createElement('div');
-    pipelineDiv.className = 'pipeline-inline';
-    // We will keep the spinner loosely coupled so we can move it
-    pipelineDiv.innerHTML = `<div class="pipeline-step active" id="current-step"><span class="step-icon"><div class="spinner-icon"></div></span><span class="step-text">Initializing Process...</span></div>`;
-    
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble markdown-body';
-    
-    assistantContainer.appendChild(pipelineDiv);
-    assistantContainer.appendChild(bubble);
-    chatHistory.appendChild(assistantContainer);
+    pipelineDiv.className = 'pipeline-container';
+    pipelineDiv.innerHTML = `<div class="pipe-step active"><span class="step-icon"><div class="pipe-spinner"></div></span><span class="step-text">Initializing pipeline...</span></div>`;
+
+    const bubbleDiv = document.createElement('div');
+    bubbleDiv.className = 'msg-bubble assistant-bubble markdown-body';
+
+    assistantDiv.appendChild(pipelineDiv);
+    assistantDiv.appendChild(bubbleDiv);
+    DOM.chatMessages.appendChild(assistantDiv);
     scrollToBottom();
 
     try {
         const payload = { message };
-        if (currentSessionId) payload.sessionId = currentSessionId;
+        if (state.sessionId) payload.sessionId = state.sessionId;
 
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -328,148 +356,590 @@ chatForm.addEventListener('submit', async (e) => {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let assistantText = '';
+        let buffer = '';
 
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n');
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // keep incomplete line in buffer
 
             for (const line of lines) {
                 if (!line.trim()) continue;
                 try {
                     const data = JSON.parse(line);
-
-                    if (data.type === 'meta') {
-                        currentSessionId = data.sessionId;
-                    } 
-                    else if (data.type === 'step' || data.type === 'data') {
-                        // Mark previous step as done (replace spinner with check)
-                        const currentActive = pipelineDiv.querySelector('.pipeline-step.active');
-                        if (currentActive) {
-                            currentActive.classList.remove('active');
-                            const iconSpan = currentActive.querySelector('.step-icon');
-                            if (iconSpan) iconSpan.innerHTML = '✓';
-                        }
-
-                        // Update Pipeline
-                        let statusText = data.content;
-                        if(data.type === 'data') {
-                           const encodedData = encodeURIComponent(JSON.stringify(data.data));
-                           const detailsLink = `<span class="details-link" onclick="window.openDetailsModal('${data.title}', '${encodedData}')">(View details)</span>`;
-                           
-                           if(data.title.includes("Routing")) {
-                               statusText = `Routed via <strong>${data.data.Route || data.data["Selected Route"]}</strong> ${detailsLink}`;
-                           } else if(data.title.includes("Triage")) {
-                               statusText = `Triage applied. ${detailsLink}`;
-                           } else {
-                               statusText = `${data.title} ${detailsLink}`;
-                           }
-                        }
-                        
-                        pipelineDiv.innerHTML += `<div class="pipeline-step active"><span class="step-icon"><div class="spinner-icon"></div></span><span class="step-text">${statusText}</span></div>`;
-                        scrollToBottom();
-                    }
-                    else if (data.type === 'rag_context') {
-                        window.currentRagChunks = data.chunks;
-                        // Mark previous active as done
-                        const currentActive = pipelineDiv.querySelector('.pipeline-step.active');
-                        if (currentActive) {
-                            currentActive.classList.remove('active');
-                            const iconSpan = currentActive.querySelector('.step-icon');
-                            if (iconSpan) iconSpan.innerHTML = '✓';
-                        }
-                        
-                        pipelineDiv.innerHTML += `<div class="pipeline-step" style="color:var(--accent-blue); cursor:pointer; text-decoration:underline;" onclick="window.openRagModal()">✓ <span class="step-text">Found ${data.chunks.length} legal sources. (Click to view)</span></div>`;
-                        // Re-add a loading step since generating is next
-                        pipelineDiv.innerHTML += `<div class="pipeline-step active"><span class="step-icon"><div class="spinner-icon"></div></span><span class="step-text">Reading context and generating...</span></div>`;
-                        scrollToBottom();
-                    }
-                    else if (data.type === 'result') {
-                        // Mark pipeline as complete
-                        const currentActive = pipelineDiv.querySelector('.pipeline-step.active');
-                        if (currentActive) {
-                            currentActive.classList.remove('active');
-                            const iconSpan = currentActive.querySelector('.step-icon');
-                            if (iconSpan) iconSpan.innerHTML = '✓';
-                            const textSpan = currentActive.querySelector('.step-text');
-                            if (textSpan) textSpan.innerHTML = 'Completed';
-                        }
-                        
+                    handleStreamEvent(data, pipelineDiv, bubbleDiv);
+                    
+                    if (data.type === 'result') {
                         assistantText = data.content;
-                        bubble.innerHTML = renderMarkdown(assistantText);
-                        scrollToBottom();
                     }
-                    else if (data.type === 'error') {
-                        pipelineDiv.innerHTML += `<div class="pipeline-step" style="color:red">✗ <span class="step-text">Error: ${data.content}</span></div>`;
-                        if(assistantText === '') bubble.innerHTML = `<div style="color:red">${data.content}</div>`;
-                    }
-                } catch (e) {
-                    console.error("SSE Parse Error", e);
+                } catch (parseErr) {
+                    console.error('Stream parse error:', parseErr);
                 }
             }
         }
-    } catch (e) {
-        pipelineDiv.innerHTML += `<div class="pipeline-step" style="color:red">✗ Critical Network Error.</div>`;
+
+        // Process remaining buffer
+        if (buffer.trim()) {
+            try {
+                const data = JSON.parse(buffer);
+                handleStreamEvent(data, pipelineDiv, bubbleDiv);
+                if (data.type === 'result') assistantText = data.content;
+            } catch {}
+        }
+
+        // Store in local history
+        if (assistantText) {
+            state.chatHistory.push({ role: 'assistant', content: assistantText });
+            state.messageCount++;
+        }
+
+    } catch (err) {
+        pipelineDiv.innerHTML += `<div class="pipe-step error"><span class="step-icon">✗</span><span class="step-text">Network error: ${escapeHtml(err.message)}</span></div>`;
     } finally {
-        isProcessing = false;
+        state.isProcessing = false;
+        DOM.sendBtn.disabled = false;
+        updateStatusBar();
     }
 });
 
-// =============================================
-// Render Markdown with <think> Tag Extraction
-// =============================================
-function renderMarkdown(text) {
-    if(!text) return '';
-    let parsedText = text;
+function handleStreamEvent(data, pipelineDiv, bubbleDiv) {
+    if (data.type === 'meta') {
+        state.sessionId = data.sessionId;
+        updateStatusBar();
+    }
+    else if (data.type === 'step' || data.type === 'data') {
+        // Mark previous active step as done
+        markPreviousStepDone(pipelineDiv);
 
-    // Fix <think> tags. Sometimes models use <think> \n content \n </think> or just <think>content</think>.
-    // Using a more robust regex that ignores case and matches universally.
-    parsedText = parsedText.replace(/<think>([\s\S]*?)<\/think>/gi, function(match, inner) {
-        return `<details class="reasoning-block"><summary>Thought Process</summary><div class="reasoning-content">${inner}</div></details>\n`;
-    });
-    
-    // Handle streaming case where <think> is present but not closed
-    if (parsedText.includes('<think>') && !parsedText.includes('</think>')) {
-        parsedText = parsedText.replace(/<think>/gi, '<details open class="reasoning-block"><summary>Thought Process</summary><div class="reasoning-content">\n');
-        parsedText += '\n</div></details>';
-    } 
+        let statusText = '';
+        if (data.type === 'data') {
+            const encodedData = encodeURIComponent(JSON.stringify(data.data));
+            const link = `<span class="details-link" onclick="window.openDetailsModal('${escapeHtml(data.title)}', '${encodedData}')">(View details)</span>`;
+            
+            if (data.title.includes('Routing')) {
+                statusText = `Routed via <strong>${escapeHtml(data.data['Selected Route'] || data.data.Route || '')}</strong> ${link}`;
+            } else if (data.title.includes('Triage')) {
+                statusText = `Triage applied ${link}`;
+            } else {
+                statusText = `${escapeHtml(data.title)} ${link}`;
+            }
+        } else {
+            statusText = escapeHtml(data.content);
+        }
 
-    // Convert Citations [1], [2], etc into clickable badges
-    parsedText = parsedText.replace(/\[(\d+)\]/g, '<sup class="citation" data-ref="$1" style="cursor:pointer; color:var(--accent-blue); font-weight:bold; padding: 0 2px;">[$1]</sup>');
+        const step = document.createElement('div');
+        step.className = 'pipe-step active';
+        step.innerHTML = `<span class="step-icon"><div class="pipe-spinner"></div></span><span class="step-text">${statusText}</span>`;
+        pipelineDiv.appendChild(step);
+        scrollToBottom();
+    }
+    else if (data.type === 'rag_context') {
+        state.currentRagChunks = data.chunks;
+        markPreviousStepDone(pipelineDiv);
 
-    // Configure marked for proper HTML support
-    const rawHtml = marked.parse(parsedText, { breaks: true, gfm: true });
-    
-    // Purify with exceptions for details, summary, and citations
-    return DOMPurify.sanitize(rawHtml, {
-        ADD_TAGS: ['details', 'summary', 'sup'],
-        ADD_ATTR: ['open', 'class', 'data-ref', 'style']
-    });
+        // RAG found step
+        const ragStep = document.createElement('div');
+        ragStep.className = 'pipe-step done';
+        ragStep.style.cursor = 'pointer';
+        ragStep.innerHTML = `<span class="step-icon">✓</span><span class="step-text" style="color:var(--accent-primary);text-decoration:underline" onclick="window.openRagModal()">Found ${data.chunks.length} legal sources (click to view)</span>`;
+        pipelineDiv.appendChild(ragStep);
+
+        // Add generating step
+        const genStep = document.createElement('div');
+        genStep.className = 'pipe-step active';
+        genStep.innerHTML = `<span class="step-icon"><div class="pipe-spinner"></div></span><span class="step-text">Reading context and generating...</span>`;
+        pipelineDiv.appendChild(genStep);
+        scrollToBottom();
+    }
+    else if (data.type === 'result') {
+        markPreviousStepDone(pipelineDiv);
+        
+        // Final completed step
+        const doneStep = document.createElement('div');
+        doneStep.className = 'pipe-step done';
+        doneStep.innerHTML = `<span class="step-icon">✓</span><span class="step-text">Completed</span>`;
+        pipelineDiv.appendChild(doneStep);
+
+        bubbleDiv.innerHTML = renderMarkdown(data.content);
+        
+        if (data.route) {
+            state.currentRoute = data.route;
+        }
+        scrollToBottom();
+    }
+    else if (data.type === 'error') {
+        const errStep = document.createElement('div');
+        errStep.className = 'pipe-step error';
+        errStep.innerHTML = `<span class="step-icon">✗</span><span class="step-text">${escapeHtml(data.content)}</span>`;
+        pipelineDiv.appendChild(errStep);
+        
+        if (!bubbleDiv.innerHTML) {
+            bubbleDiv.innerHTML = `<div style="color:var(--accent-red)">${escapeHtml(data.content)}</div>`;
+        }
+    }
 }
 
-function addMessage(text, sender) {
-    const div = document.createElement('div');
-    div.className = `message ${sender}`;
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
-    
-    // User messages are safe text
-    if(sender === 'user') {
-        bubble.innerText = text;
-    } else {
-        bubble.innerHTML = renderMarkdown(text);
+function markPreviousStepDone(pipelineDiv) {
+    const active = pipelineDiv.querySelector('.pipe-step.active:last-of-type') || pipelineDiv.querySelector('.pipe-step.active');
+    if (active) {
+        active.classList.remove('active');
+        active.classList.add('done');
+        const icon = active.querySelector('.step-icon');
+        if (icon) icon.innerHTML = '✓';
     }
-    
-    div.appendChild(bubble);
-    chatHistory.appendChild(div);
+}
+
+// =============================================
+// 8. Conversation Manager
+// =============================================
+
+// New Chat
+DOM.newChatBtn.addEventListener('click', () => {
+    state.sessionId = null;
+    state.currentRoute = null;
+    state.messageCount = 0;
+    state.chatHistory = [];
+    state.currentRagChunks = [];
+
+    DOM.chatMessages.innerHTML = '';
+    // Re-add welcome screen
+    DOM.chatMessages.innerHTML = `
+        <div class="welcome-screen" id="welcome-screen">
+            <div class="welcome-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </div>
+            <h2>Saan ako makakatulong, OFW?</h2>
+            <p>Ask me anything about Philippine & Hong Kong labor laws, migrant worker rights, and legal procedures.</p>
+            <div class="welcome-hints">
+                <button class="hint-chip" onclick="sendPreset('What are my rights as an OFW in Hong Kong?')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+                    OFW rights in HK
+                </button>
+                <button class="hint-chip" onclick="sendPreset('What is the minimum wage for domestic helpers?')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    Minimum wage policies
+                </button>
+                <button class="hint-chip" onclick="sendPreset('My employer did not pay me for 2 months, what should I do?')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    Unpaid wages dispute
+                </button>
+            </div>
+        </div>`;
+
+    updateStatusBar();
+    showToast('New chat started', 'info');
+});
+
+// Save Conversation
+DOM.saveChatBtn.addEventListener('click', async () => {
+    if (state.chatHistory.length === 0) {
+        showToast('No messages to save', 'error');
+        return;
+    }
+
+    // Generate title from first user message
+    const firstMsg = state.chatHistory.find(m => m.role === 'user');
+    const title = firstMsg ? firstMsg.content.substring(0, 60) : 'Untitled';
+
+    try {
+        const res = await fetch('/api/chat/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                sessionId: state.sessionId,
+                messages: state.chatHistory,
+                title: title
+            })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast('Conversation saved!', 'success');
+            loadConversationsList();
+        } else {
+            showToast('Save failed: ' + (data.error || 'Unknown error'), 'error');
+        }
+    } catch (err) {
+        showToast('Network error while saving', 'error');
+    }
+});
+
+// Load from file upload
+DOM.loadFileBtn.addEventListener('click', () => DOM.loadFileInput.click());
+DOM.loadFileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const res = await fetch('/api/chat/load', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (data.error) {
+            showToast('Load failed: ' + data.error, 'error');
+        } else {
+            restoreConversation(data);
+            showToast('Conversation loaded from file', 'success');
+        }
+    } catch (err) {
+        showToast('Error loading file', 'error');
+    }
+    e.target.value = '';
+});
+
+// List saved conversations
+async function loadConversationsList() {
+    try {
+        const res = await fetch('/api/chat/list');
+        const files = await res.json();
+        
+        const frag = document.createDocumentFragment();
+        if (files.length === 0) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'padding:16px;text-align:center;color:var(--text-muted);font-size:0.78rem';
+            empty.textContent = 'No saved conversations yet';
+            frag.appendChild(empty);
+        } else {
+            files.forEach(f => {
+                const item = document.createElement('div');
+                item.className = 'convo-item';
+                item.innerHTML = `<span class="convo-title">${escapeHtml(f.title)}</span><span class="convo-meta">${f.message_count} messages · ${formatTimestamp(f.timestamp)}</span>`;
+                item.addEventListener('click', () => loadConversation(f.filename));
+                frag.appendChild(item);
+            });
+        }
+        DOM.convoList.innerHTML = '';
+        DOM.convoList.appendChild(frag);
+    } catch {}
+}
+
+async function loadConversation(filename) {
+    try {
+        const res = await fetch('/api/chat/load', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename })
+        });
+        const data = await res.json();
+        if (data.error) {
+            showToast('Load failed: ' + data.error, 'error');
+        } else {
+            restoreConversation(data);
+            showToast('Conversation loaded', 'success');
+        }
+    } catch {
+        showToast('Error loading conversation', 'error');
+    }
+}
+
+function restoreConversation(data) {
+    // Clear current chat
+    DOM.chatMessages.innerHTML = '';
+    state.sessionId = data.session_id || null;
+    state.chatHistory = data.messages || [];
+    state.messageCount = state.chatHistory.length;
+    state.currentRoute = null;
+    state.currentRagChunks = [];
+
+    // Rebuild chat UI
+    const frag = document.createDocumentFragment();
+    state.chatHistory.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = `message ${msg.role === 'user' ? 'user' : 'assistant'}`;
+        const bubble = document.createElement('div');
+        
+        if (msg.role === 'user') {
+            bubble.className = 'msg-bubble user-bubble';
+            bubble.textContent = msg.content;
+        } else {
+            bubble.className = 'msg-bubble assistant-bubble markdown-body';
+            bubble.innerHTML = renderMarkdown(msg.content);
+        }
+        
+        div.appendChild(bubble);
+        frag.appendChild(div);
+    });
+    DOM.chatMessages.appendChild(frag);
+    updateStatusBar();
     scrollToBottom();
 }
 
-function scrollToBottom() {
-    const container = document.querySelector('.chat-history-container');
-    requestAnimationFrame(() => {
-        container.scrollTop = container.scrollHeight;
-    });
+function formatTimestamp(ts) {
+    if (!ts) return '';
+    try {
+        const d = new Date(ts);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch { return ts; }
 }
+
+// Load list on startup
+loadConversationsList();
+
+// =============================================
+// 9. Config Manager
+// =============================================
+
+async function loadConfig() {
+    try {
+        const res = await fetch('/api/config');
+        const data = await res.json();
+
+        // API Key
+        document.getElementById('cfg_api_key').value = data.api_key || '';
+
+        // Triage
+        document.getElementById('cfg_triage_model').value = data.triage_model || '';
+        document.getElementById('cfg_triage_temp').value = data.triage_temp ?? 0;
+        document.getElementById('cfg_triage_max_tokens').value = data.triage_max_tokens ?? 1000;
+        document.getElementById('cfg_triage_use_system').checked = !!data.triage_use_system;
+        document.getElementById('cfg_triage_reasoning').checked = !!data.triage_reasoning;
+        document.getElementById('cfg_triage_instructions').value = data.triage_instructions || '';
+        updateCharCount('triage');
+
+        // Router
+        document.getElementById('cfg_router_model').value = data.router_model || '';
+        document.getElementById('cfg_router_temp').value = data.router_temp ?? 0;
+        document.getElementById('cfg_router_max_tokens').value = data.router_max_tokens ?? 1000;
+        document.getElementById('cfg_router_use_system').checked = !!data.router_use_system;
+        document.getElementById('cfg_router_reasoning').checked = !!data.router_reasoning;
+
+        // General
+        document.getElementById('cfg_general_model').value = data.general_model || '';
+        document.getElementById('cfg_general_temp').value = data.general_temp ?? 0;
+        document.getElementById('cfg_general_max_tokens').value = data.general_max_tokens ?? 1000;
+        document.getElementById('cfg_general_use_system').checked = !!data.general_use_system;
+        document.getElementById('cfg_general_reasoning').checked = !!data.general_reasoning;
+        document.getElementById('cfg_general_instructions').value = data.general_instructions || '';
+        updateCharCount('general');
+
+        // Reasoning
+        document.getElementById('cfg_reasoning_model').value = data.reasoning_model || '';
+        document.getElementById('cfg_reasoning_temp').value = data.reasoning_temp ?? 0;
+        document.getElementById('cfg_reasoning_max_tokens').value = data.reasoning_max_tokens ?? 2000;
+        document.getElementById('cfg_reasoning_use_system').checked = !!data.reasoning_use_system;
+        document.getElementById('cfg_reasoning_reasoning').checked = !!data.reasoning_reasoning;
+        document.getElementById('cfg_reasoning_instructions').value = data.reasoning_instructions || '';
+        updateCharCount('reasoning');
+
+        // Casual
+        document.getElementById('cfg_casual_model').value = data.casual_model || '';
+        document.getElementById('cfg_casual_temp').value = data.casual_temp ?? 0;
+        document.getElementById('cfg_casual_max_tokens').value = data.casual_max_tokens ?? 200;
+        document.getElementById('cfg_casual_use_system').checked = !!data.casual_use_system;
+        document.getElementById('cfg_casual_reasoning').checked = !!data.casual_reasoning;
+        document.getElementById('cfg_casual_instructions').value = data.casual_instructions || '';
+        updateCharCount('casual');
+
+    } catch (e) {
+        console.error('Failed to load config:', e);
+    }
+}
+
+function updateCharCount(module) {
+    const textarea = document.getElementById(`cfg_${module}_instructions`);
+    const counter = document.getElementById(`cc_${module}`);
+    if (textarea && counter) {
+        counter.textContent = `${textarea.value.length} chars`;
+    }
+}
+
+// Attach char counters
+['triage', 'general', 'reasoning', 'casual'].forEach(mod => {
+    const ta = document.getElementById(`cfg_${mod}_instructions`);
+    if (ta) {
+        ta.addEventListener('input', () => updateCharCount(mod));
+        // Tab support
+        ta.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = ta.selectionStart;
+                const end = ta.selectionEnd;
+                ta.value = ta.value.substring(0, start) + '    ' + ta.value.substring(end);
+                ta.selectionStart = ta.selectionEnd = start + 4;
+            }
+        });
+    }
+});
+
+// Save Config
+DOM.saveConfigBtn.addEventListener('click', async () => {
+    const payload = {
+        api_key: document.getElementById('cfg_api_key').value,
+
+        triage_model: document.getElementById('cfg_triage_model').value,
+        triage_temp: parseFloat(document.getElementById('cfg_triage_temp').value) || 0,
+        triage_max_tokens: parseInt(document.getElementById('cfg_triage_max_tokens').value) || 1000,
+        triage_use_system: document.getElementById('cfg_triage_use_system').checked,
+        triage_reasoning: document.getElementById('cfg_triage_reasoning').checked,
+        triage_instructions: document.getElementById('cfg_triage_instructions').value,
+
+        router_model: document.getElementById('cfg_router_model').value,
+        router_temp: parseFloat(document.getElementById('cfg_router_temp').value) || 0,
+        router_max_tokens: parseInt(document.getElementById('cfg_router_max_tokens').value) || 1000,
+        router_use_system: document.getElementById('cfg_router_use_system').checked,
+        router_reasoning: document.getElementById('cfg_router_reasoning').checked,
+
+        general_model: document.getElementById('cfg_general_model').value,
+        general_temp: parseFloat(document.getElementById('cfg_general_temp').value) || 0,
+        general_max_tokens: parseInt(document.getElementById('cfg_general_max_tokens').value) || 1000,
+        general_use_system: document.getElementById('cfg_general_use_system').checked,
+        general_reasoning: document.getElementById('cfg_general_reasoning').checked,
+        general_instructions: document.getElementById('cfg_general_instructions').value,
+
+        reasoning_model: document.getElementById('cfg_reasoning_model').value,
+        reasoning_temp: parseFloat(document.getElementById('cfg_reasoning_temp').value) || 0,
+        reasoning_max_tokens: parseInt(document.getElementById('cfg_reasoning_max_tokens').value) || 2000,
+        reasoning_use_system: document.getElementById('cfg_reasoning_use_system').checked,
+        reasoning_reasoning: document.getElementById('cfg_reasoning_reasoning').checked,
+        reasoning_instructions: document.getElementById('cfg_reasoning_instructions').value,
+
+        casual_model: document.getElementById('cfg_casual_model').value,
+        casual_temp: parseFloat(document.getElementById('cfg_casual_temp').value) || 0,
+        casual_max_tokens: parseInt(document.getElementById('cfg_casual_max_tokens').value) || 200,
+        casual_use_system: document.getElementById('cfg_casual_use_system').checked,
+        casual_reasoning: document.getElementById('cfg_casual_reasoning').checked,
+        casual_instructions: document.getElementById('cfg_casual_instructions').value,
+    };
+
+    DOM.saveConfigBtn.textContent = 'Saving...';
+    DOM.saveConfigBtn.disabled = true;
+
+    try {
+        await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        DOM.saveConfigBtn.textContent = 'Saved!';
+        showToast('Configuration saved', 'success');
+        setTimeout(() => {
+            DOM.saveConfigBtn.textContent = 'Save Config';
+            DOM.saveConfigBtn.disabled = false;
+        }, 1200);
+    } catch {
+        showToast('Failed to save config', 'error');
+        DOM.saveConfigBtn.textContent = 'Save Config';
+        DOM.saveConfigBtn.disabled = false;
+    }
+});
+
+// Export Config
+DOM.exportConfigBtn.addEventListener('click', () => {
+    window.location.href = '/api/config/export';
+    showToast('Configuration exported', 'success');
+});
+
+// Import Config
+DOM.importConfigBtn.addEventListener('click', () => DOM.importConfigInput.click());
+DOM.importConfigInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const res = await fetch('/api/config/import', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast(`Config imported (${data.applied} settings)`, 'success');
+            loadConfig(); // Refresh UI
+        } else {
+            showToast('Import failed: ' + (data.error || 'Unknown error'), 'error');
+        }
+    } catch {
+        showToast('Error importing config', 'error');
+    }
+    e.target.value = '';
+});
+
+// Toggle API key visibility
+window.toggleApiKeyVisibility = function() {
+    const input = document.getElementById('cfg_api_key');
+    input.type = input.type === 'password' ? 'text' : 'password';
+};
+
+// Load config on startup
+loadConfig();
+
+// =============================================
+// 10. Logs Viewer (SSE)
+// =============================================
+const MAX_LOG_LINES = 500;
+let logLineCount = 0;
+let logAutoScroll = true;
+
+function connectLogStream() {
+    const evtSource = new EventSource('/api/logs');
+
+    evtSource.onopen = () => {
+        DOM.logStatusDot.style.background = 'var(--accent-green)';
+        DOM.logStatusText.textContent = 'Connected';
+    };
+
+    evtSource.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'connected') return;
+
+            const line = document.createElement('div');
+            line.className = 'log-line';
+
+            // Color by level
+            const level = (data.level || '').toLowerCase();
+            if (level === 'warning') line.classList.add('warning');
+            else if (level === 'error' || level === 'critical') line.classList.add('error');
+            else if (level === 'debug') line.classList.add('debug');
+            else line.classList.add('info');
+
+            line.textContent = data.message || JSON.stringify(data);
+            DOM.logsContent.appendChild(line);
+            logLineCount++;
+
+            // Trim excess lines
+            while (logLineCount > MAX_LOG_LINES) {
+                const first = DOM.logsContent.firstChild;
+                if (first) {
+                    DOM.logsContent.removeChild(first);
+                    logLineCount--;
+                }
+            }
+
+            // Auto-scroll
+            if (logAutoScroll) {
+                DOM.logsContent.scrollTop = DOM.logsContent.scrollHeight;
+            }
+        } catch {}
+    };
+
+    evtSource.onerror = () => {
+        DOM.logStatusDot.style.background = 'var(--accent-red)';
+        DOM.logStatusText.textContent = 'Disconnected';
+        evtSource.close();
+        // Reconnect after 5s
+        setTimeout(connectLogStream, 5000);
+    };
+}
+
+// Detect manual scrolling in logs
+DOM.logsContent.addEventListener('scroll', () => {
+    const threshold = 30;
+    const atBottom = DOM.logsContent.scrollHeight - DOM.logsContent.scrollTop - DOM.logsContent.clientHeight < threshold;
+    logAutoScroll = atBottom;
+});
+
+DOM.clearLogsBtn.addEventListener('click', () => {
+    DOM.logsContent.innerHTML = '';
+    logLineCount = 0;
+});
+
+connectLogStream();

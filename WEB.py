@@ -2,18 +2,60 @@
 ## Team 404FoundUs
 ## @file WEB.py
 ## @project_ LLM Legal Adaptive Routing Framework
-## @desc_ Web interface (Flask) for the Legal Adaptive Routing Framework.
-## @deps os, json, time, uuid, flask, dotenv, src.adaptive_routing
+## @desc_ AI Studio web interface (Flask) for the Legal Adaptive Routing Framework.
+## @deps os, json, time, uuid, datetime, logging, queue, threading, flask, dotenv, src.adaptive_routing
 
 import os
 import json
 import time
 import uuid
-from flask import Flask, render_template, request, Response, stream_with_context
+import logging
+import queue
+import threading
+from datetime import datetime
+from flask import Flask, render_template, request, Response, stream_with_context, send_file, jsonify
 from dotenv import load_dotenv
 from src.adaptive_routing import FrameworkConfig, TriageModule, SemanticRouterModule, LegalRetrievalModule
 from src.adaptive_routing.modules.legal_retrieval.utils import legal_indexing
 load_dotenv()
+
+# --- Log Capture for SSE Streaming ---
+class QueueLogHandler(logging.Handler):
+    """Custom logging handler that pushes log records into a thread-safe queue
+    for real-time streaming to the browser via SSE."""
+    def __init__(self):
+        super().__init__()
+        self.log_queue = queue.Queue(maxsize=2000)
+        self.formatter = logging.Formatter('[%(asctime)s] %(levelname)s — %(name)s — %(message)s', datefmt='%H:%M:%S')
+    
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            if self.log_queue.full():
+                try:
+                    self.log_queue.get_nowait()
+                except queue.Empty:
+                    pass
+            self.log_queue.put_nowait({
+                "timestamp": datetime.now().strftime('%H:%M:%S'),
+                "level": record.levelname,
+                "message": msg
+            })
+        except Exception:
+            self.handleError(record)
+
+# Install global log handler
+log_handler = QueueLogHandler()
+log_handler.setLevel(logging.DEBUG)
+
+# Attach to root logger to capture all library output
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.DEBUG)
+root_logger.addHandler(log_handler)
+
+# Also capture print-style output via a custom logger
+app_logger = logging.getLogger("agapay.studio")
+app_logger.setLevel(logging.DEBUG)
 
 # --- Retry Configuration ---
 MAX_RETRIES = 5
@@ -24,9 +66,11 @@ def _is_rate_limited_(error):
     err_str = str(error).lower()
     return "429" in err_str or "rate" in err_str or "rate-limited" in err_str or "too many requests" in err_str
 
-
-
 app = Flask(__name__)
+
+# --- Directories ---
+CONVERSATIONS_DIR = os.path.join(os.getcwd(), "localfiles", "conversations")
+os.makedirs(CONVERSATIONS_DIR, exist_ok=True)
 
 # --- Configuration ---
 FrameworkConfig._update_settings_(
@@ -45,19 +89,19 @@ try:
     chunks_file = os.path.join(index_dir, "combined_index.json")
     
     if os.path.exists(index_file) and os.path.exists(chunks_file):
-        print(">>> Loading existing FAISS index...")
+        app_logger.info("Loading existing FAISS index...")
         retrieval_module._load_index_(index_file, chunks_file)
     else:
-        print(">>> Building initial FAISS index for all jurisdictions (this may take a while)...")
+        app_logger.info("Building initial FAISS index for all jurisdictions (this may take a while)...")
         os.makedirs(index_dir, exist_ok=True)
         retrieval_module.build_and_save_index(
             corpus_dir="legal-corpus",
             output_dir=index_dir,
             index_prefix="combined_index"
         )
-        print(">>> FAISS index built and saved successfully.")
+        app_logger.info("FAISS index built and saved successfully.")
         
-    print(">>> Modules initialized successfully.")
+    app_logger.info("Modules initialized successfully.")
     
     # Check sync status on startup
     sync_info = legal_indexing.verify_index_integrity(
@@ -65,12 +109,12 @@ try:
         chunks_path=chunks_file
     )
     if not sync_info["is_synced"]:
-        print(f">>> WARNING: Index is out of sync. {sync_info['missing_count']} documents missing.")
+        app_logger.warning(f"Index is out of sync. {sync_info['missing_count']} documents missing.")
     else:
-        print(">>> Index is fully synced with corpus.")
+        app_logger.info("Index is fully synced with corpus.")
 
 except Exception as e:
-    print(f">>> Error initializing modules: {e}")
+    app_logger.error(f"Error initializing modules: {e}")
     triage_module = None
     router_module = None
     retrieval_module = None
@@ -78,6 +122,14 @@ except Exception as e:
 # In-memory session storage
 # Format: { "session_id": { "route": "...", "history": [...] } }
 SESSIONS = {}
+
+# =============================================
+# Core Routes
+# =============================================
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 @app.route('/api/sync-status', methods=['GET'])
 def get_sync_status():
@@ -94,9 +146,9 @@ def get_sync_status():
     except Exception as e:
         return json.dumps({"error": str(e)}), 500
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+# =============================================
+# Chat API
+# =============================================
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -143,11 +195,11 @@ def chat():
                     except Exception as triage_err:
                         if _is_rate_limited_(triage_err) and attempt < MAX_RETRIES:
                             delay = BASE_DELAY * attempt
-                            print(f"Triage rate-limited (attempt {attempt}/{MAX_RETRIES}), retrying in {delay}s...")
+                            app_logger.warning(f"Triage rate-limited (attempt {attempt}/{MAX_RETRIES}), retrying in {delay}s...")
                             yield json.dumps({"type": "step", "content": f"Rate-limited — retrying triage ({attempt}/{MAX_RETRIES})..."}) + "\n"
                             time.sleep(delay)
                         else:
-                            print(f"Triage failed after {attempt} attempt(s): {triage_err}")
+                            app_logger.error(f"Triage failed after {attempt} attempt(s): {triage_err}")
                             yield json.dumps({"type": "step", "content": "Triage failed — using raw input as fallback..."}) + "\n"
                             break
             
@@ -184,11 +236,11 @@ def chat():
                     except Exception as classify_err:
                         if _is_rate_limited_(classify_err) and attempt < MAX_RETRIES:
                             delay = BASE_DELAY * attempt
-                            print(f"Classification rate-limited (attempt {attempt}/{MAX_RETRIES}), retrying in {delay}s...")
+                            app_logger.warning(f"Classification rate-limited (attempt {attempt}/{MAX_RETRIES}), retrying in {delay}s...")
                             yield json.dumps({"type": "step", "content": f"Rate-limited — retrying classification ({attempt}/{MAX_RETRIES})..."}) + "\n"
                             time.sleep(delay)
                         else:
-                            print(f"Classification failed after {attempt} attempt(s): {classify_err}")
+                            app_logger.error(f"Classification failed after {attempt} attempt(s): {classify_err}")
                             break
             
             route = classification.get("route") or "General-LLM"
@@ -234,7 +286,7 @@ def chat():
                                 SESSIONS[session_id]["last_rag_context"] = None
                                 context_str = None
                         except Exception as rag_err:
-                            print(f"RAG retrieval error: {rag_err}")
+                            app_logger.error(f"RAG retrieval error: {rag_err}")
                             yield json.dumps({"type": "step", "content": "Retrieval omitted (fallback applied)..."}) + "\n"
                 else:
                     if context_str:
@@ -270,11 +322,11 @@ def chat():
                     except Exception as gen_err:
                         if _is_rate_limited_(gen_err) and attempt < MAX_RETRIES:
                             delay = BASE_DELAY * attempt
-                            print(f"Generation rate-limited (attempt {attempt}/{MAX_RETRIES}), retrying in {delay}s...")
+                            app_logger.warning(f"Generation rate-limited (attempt {attempt}/{MAX_RETRIES}), retrying in {delay}s...")
                             yield json.dumps({"type": "step", "content": f"Rate-limited — retrying generation ({attempt}/{MAX_RETRIES})..."}) + "\n"
                             time.sleep(delay)
                         else:
-                            print(f"Generation failed after {attempt} attempt(s): {gen_err}")
+                            app_logger.error(f"Generation failed after {attempt} attempt(s): {gen_err}")
                             response_text = "I am currently unable to process your query due to a technical error. Please try again."
                             break
             else:
@@ -284,15 +336,110 @@ def chat():
             if response_text:
                 history.append({"role": "assistant", "content": response_text})
                 SESSIONS[session_id]["route"] = route
-                yield json.dumps({"type": "result", "content": response_text}) + "\n"
+                yield json.dumps({"type": "result", "content": response_text, "route": route}) + "\n"
             else:
                 yield json.dumps({"type": "error", "content": "No response generated."}) + "\n"
 
         except Exception as e:
             yield json.dumps({"type": "error", "content": f"Server Error: {str(e)}"}) + "\n"
-            print(f"Error processing request: {e}")
+            app_logger.error(f"Error processing request: {e}")
 
     return Response(stream_with_context(generate()), mimetype='application/x-ndjson')
+
+# =============================================
+# Conversation Persistence API
+# =============================================
+
+@app.route('/api/chat/save', methods=['POST'])
+def save_conversation():
+    """Save current chat session to a JSON file."""
+    data = request.json
+    session_id = data.get('sessionId')
+    messages = data.get('messages', [])
+    title = data.get('title', 'Untitled Conversation')
+    
+    if not messages:
+        return jsonify({"error": "No messages to save"}), 400
+    
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    filename = f"{timestamp}.json"
+    filepath = os.path.join(CONVERSATIONS_DIR, filename)
+    
+    conversation_data = {
+        "session_id": session_id or str(uuid.uuid4()),
+        "title": title,
+        "timestamp": datetime.now().isoformat(),
+        "message_count": len(messages),
+        "messages": messages
+    }
+    
+    try:
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(conversation_data, f, indent=2, ensure_ascii=False)
+        app_logger.info(f"Conversation saved: {filename}")
+        return jsonify({"status": "success", "filename": filename, "path": filepath})
+    except Exception as e:
+        app_logger.error(f"Failed to save conversation: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/chat/list', methods=['GET'])
+def list_conversations():
+    """List all saved conversation files."""
+    try:
+        files = []
+        for f in sorted(os.listdir(CONVERSATIONS_DIR), reverse=True):
+            if f.endswith('.json'):
+                filepath = os.path.join(CONVERSATIONS_DIR, f)
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as fh:
+                        data = json.load(fh)
+                    files.append({
+                        "filename": f,
+                        "title": data.get("title", "Untitled"),
+                        "timestamp": data.get("timestamp", ""),
+                        "message_count": data.get("message_count", 0)
+                    })
+                except Exception:
+                    files.append({"filename": f, "title": f, "timestamp": "", "message_count": 0})
+        return jsonify(files)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/chat/load', methods=['POST'])
+def load_conversation():
+    """Load a conversation from a JSON file."""
+    # Support both filename-based and file-upload loading
+    if request.content_type and 'multipart/form-data' in request.content_type:
+        # File upload
+        file = request.files.get('file')
+        if not file:
+            return jsonify({"error": "No file provided"}), 400
+        try:
+            data = json.load(file)
+            return jsonify(data)
+        except Exception as e:
+            return jsonify({"error": f"Invalid JSON file: {str(e)}"}), 400
+    else:
+        # Filename-based
+        data = request.json
+        filename = data.get('filename')
+        if not filename:
+            return jsonify({"error": "No filename provided"}), 400
+        
+        filepath = os.path.join(CONVERSATIONS_DIR, filename)
+        if not os.path.exists(filepath):
+            return jsonify({"error": "File not found"}), 404
+        
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                conversation = json.load(f)
+            return jsonify(conversation)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+# =============================================
+# Configuration API
+# =============================================
 
 @app.route('/api/config', methods=['GET'])
 def get_config():
@@ -304,6 +451,7 @@ def get_config():
         "triage_max_tokens": FrameworkConfig._TRIAGE_MAX_TOKENS,
         "triage_use_system": FrameworkConfig._TRIAGE_USE_SYSTEM,
         "triage_reasoning": FrameworkConfig._TRIAGE_REASONING,
+        "triage_instructions": FrameworkConfig._TRIAGE_INSTRUCTIONS,
         
         "router_model": FrameworkConfig._ROUTER_MODEL,
         "router_temp": FrameworkConfig._ROUTER_TEMP,
@@ -331,7 +479,6 @@ def get_config():
         "casual_use_system": FrameworkConfig._CASUAL_USE_SYSTEM,
         "casual_reasoning": FrameworkConfig._CASUAL_REASONING,
         "casual_instructions": FrameworkConfig._CASUAL_INSTRUCTIONS,
-        "triage_instructions": FrameworkConfig._TRIAGE_INSTRUCTIONS,
     })
 
 @app.route('/api/config', methods=['POST'])
@@ -347,6 +494,7 @@ def save_config():
         triage_max_tokens=int(data.get('triage_max_tokens', FrameworkConfig._TRIAGE_MAX_TOKENS)),
         triage_use_system=bool(data.get('triage_use_system', FrameworkConfig._TRIAGE_USE_SYSTEM)),
         triage_reasoning=bool(data.get('triage_reasoning', FrameworkConfig._TRIAGE_REASONING)),
+        triage_instructions=data.get('triage_instructions', FrameworkConfig._TRIAGE_INSTRUCTIONS),
         
         router_model=data.get('router_model', FrameworkConfig._ROUTER_MODEL),
         router_temp=float(data.get('router_temp', FrameworkConfig._ROUTER_TEMP)),
@@ -374,11 +522,9 @@ def save_config():
         casual_use_system=bool(data.get('casual_use_system', FrameworkConfig._CASUAL_USE_SYSTEM)),
         casual_reasoning=bool(data.get('casual_reasoning', FrameworkConfig._CASUAL_REASONING)),
         casual_instructions=data.get('casual_instructions', FrameworkConfig._CASUAL_INSTRUCTIONS),
-        triage_instructions=data.get('triage_instructions', FrameworkConfig._TRIAGE_INSTRUCTIONS),
     )
     
     from dotenv import set_key
-    import os
     env_file = os.path.join(os.getcwd(), ".env")
     
     # Save standard properties to env
@@ -401,8 +547,6 @@ def save_config():
     set_key(env_file, "GENERAL_MAX_TOKENS", str(FrameworkConfig._GENERAL_MAX_TOKENS))
     set_key(env_file, "GENERAL_USE_SYSTEM", str(FrameworkConfig._GENERAL_USE_SYSTEM))
     set_key(env_file, "GENERAL_REASONING", str(FrameworkConfig._GENERAL_REASONING))
-    # Multiline instructions are hard to safely set_key dynamically depending on shell, but we can try representing them with single line escaping,
-    # or just rely on memory for this session. It's safer to not persist giant multi-line system prompts via dotenv set_key to avoid corrupting .env files.
     
     set_key(env_file, "REASONING_MODEL", FrameworkConfig._REASONING_MODEL)
     set_key(env_file, "REASONING_TEMP", str(FrameworkConfig._REASONING_TEMP))
@@ -416,7 +560,136 @@ def save_config():
     set_key(env_file, "CASUAL_USE_SYSTEM", str(FrameworkConfig._CASUAL_USE_SYSTEM))
     set_key(env_file, "CASUAL_REASONING", str(FrameworkConfig._CASUAL_REASONING))
     
+    app_logger.info("Configuration updated and saved to .env")
     return json.dumps({"status": "success", "message": "Configuration updated successfully."})
+
+@app.route('/api/config/export', methods=['GET'])
+def export_config():
+    """Export current configuration as a downloadable .config file."""
+    config_data = {
+        "framework": "Legal-Adaptive-Routing-Framework",
+        "version": "1.0",
+        "exported_at": datetime.now().isoformat(),
+        "config": {
+            "triage": {
+                "model": FrameworkConfig._TRIAGE_MODEL,
+                "temp": FrameworkConfig._TRIAGE_TEMP,
+                "max_tokens": FrameworkConfig._TRIAGE_MAX_TOKENS,
+                "use_system": FrameworkConfig._TRIAGE_USE_SYSTEM,
+                "reasoning": FrameworkConfig._TRIAGE_REASONING,
+                "instructions": FrameworkConfig._TRIAGE_INSTRUCTIONS,
+            },
+            "router": {
+                "model": FrameworkConfig._ROUTER_MODEL,
+                "temp": FrameworkConfig._ROUTER_TEMP,
+                "max_tokens": FrameworkConfig._ROUTER_MAX_TOKENS,
+                "use_system": FrameworkConfig._ROUTER_USE_SYSTEM,
+                "reasoning": FrameworkConfig._ROUTER_REASONING,
+            },
+            "general": {
+                "model": FrameworkConfig._GENERAL_MODEL,
+                "temp": FrameworkConfig._GENERAL_TEMP,
+                "max_tokens": FrameworkConfig._GENERAL_MAX_TOKENS,
+                "use_system": FrameworkConfig._GENERAL_USE_SYSTEM,
+                "reasoning": FrameworkConfig._GENERAL_REASONING,
+                "instructions": FrameworkConfig._GENERAL_INSTRUCTIONS,
+            },
+            "reasoning": {
+                "model": FrameworkConfig._REASONING_MODEL,
+                "temp": FrameworkConfig._REASONING_TEMP,
+                "max_tokens": FrameworkConfig._REASONING_MAX_TOKENS,
+                "use_system": FrameworkConfig._REASONING_USE_SYSTEM,
+                "reasoning": FrameworkConfig._REASONING_REASONING,
+                "instructions": FrameworkConfig._REASONING_INSTRUCTIONS,
+            },
+            "casual": {
+                "model": FrameworkConfig._CASUAL_MODEL,
+                "temp": FrameworkConfig._CASUAL_TEMP,
+                "max_tokens": FrameworkConfig._CASUAL_MAX_TOKENS,
+                "use_system": FrameworkConfig._CASUAL_USE_SYSTEM,
+                "reasoning": FrameworkConfig._CASUAL_REASONING,
+                "instructions": FrameworkConfig._CASUAL_INSTRUCTIONS,
+            }
+        }
+    }
+    
+    timestamp = datetime.now().strftime('%Y-%m-%d')
+    filename = f"agapay_config_{timestamp}.config"
+    filepath = os.path.join(os.getcwd(), "localfiles", filename)
+    
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(config_data, f, indent=2, ensure_ascii=False)
+    
+    app_logger.info(f"Configuration exported: {filename}")
+    return send_file(filepath, as_attachment=True, download_name=filename, mimetype='application/json')
+
+@app.route('/api/config/import', methods=['POST'])
+def import_config():
+    """Import configuration from a .config file."""
+    file = request.files.get('file')
+    if not file:
+        return jsonify({"error": "No file provided"}), 400
+    
+    try:
+        config_data = json.load(file)
+        cfg = config_data.get("config", {})
+        
+        update_kwargs = {}
+        
+        # Map nested config structure to flat kwargs
+        module_map = {
+            "triage": ["model", "temp", "max_tokens", "use_system", "reasoning", "instructions"],
+            "router": ["model", "temp", "max_tokens", "use_system", "reasoning"],
+            "general": ["model", "temp", "max_tokens", "use_system", "reasoning", "instructions"],
+            "reasoning": ["model", "temp", "max_tokens", "use_system", "reasoning", "instructions"],
+            "casual": ["model", "temp", "max_tokens", "use_system", "reasoning", "instructions"],
+        }
+        
+        for module, fields in module_map.items():
+            if module in cfg:
+                for field in fields:
+                    if field in cfg[module]:
+                        key = f"{module}_{field}"
+                        val = cfg[module][field]
+                        # Type coerce
+                        if field == "temp":
+                            val = float(val)
+                        elif field == "max_tokens":
+                            val = int(val)
+                        elif field in ("use_system", "reasoning"):
+                            val = bool(val)
+                        update_kwargs[key] = val
+        
+        if update_kwargs:
+            FrameworkConfig._update_settings_(**update_kwargs)
+            app_logger.info(f"Configuration imported: {len(update_kwargs)} settings applied")
+        
+        return jsonify({"status": "success", "applied": len(update_kwargs)})
+    except Exception as e:
+        app_logger.error(f"Config import failed: {e}")
+        return jsonify({"error": str(e)}), 400
+
+# =============================================
+# Live Logs SSE Endpoint
+# =============================================
+
+@app.route('/api/logs', methods=['GET'])
+def stream_logs():
+    """SSE endpoint that streams log output to the browser in real-time."""
+    def generate():
+        yield "data: {\"type\":\"connected\",\"message\":\"Log stream connected\"}\n\n"
+        while True:
+            try:
+                log_entry = log_handler.log_queue.get(timeout=2)
+                yield f"data: {json.dumps(log_entry)}\n\n"
+            except queue.Empty:
+                # Send heartbeat to keep connection alive
+                yield ": heartbeat\n\n"
+    
+    return Response(stream_with_context(generate()), mimetype='text/event-stream', headers={
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no'
+    })
 
 if __name__ == '__main__':
     app.run(debug=True, port=5220)
