@@ -44,7 +44,8 @@ LLMRequestEngine(
     temperature: float = None,
     max_tokens: int = None,
     use_system_role: bool = None,
-    include_reasoning: bool = None
+    include_reasoning: bool = None,
+    reasoning_effort: str = None
 )
 ```
 
@@ -55,7 +56,8 @@ LLMRequestEngine(
 | `temperature` | `float` | `FrameworkConfig._TEMPERATURE` (0.7) | Controls randomness. Range: `0.0` to `2.0`. Raises `InvalidInputError` if out of range. |
 | `max_tokens` | `int` | `FrameworkConfig._MAX_TOKENS` (1500) | Maximum response length. Must be positive. |
 | `use_system_role` | `bool` | `FrameworkConfig._USE_SYSTEM_ROLE` (True) | If `True`, system instructions are sent as a `system` role message. If `False`, they are prepended to the user prompt. |
-| `include_reasoning` | `bool` | `FrameworkConfig._INCLUDE_REASONING` (False) | If `True`, requests chain-of-thought reasoning from the model and wraps it in `<reasoning>` tags. |
+| `include_reasoning` | `bool` | `FrameworkConfig._INCLUDE_REASONING` (False) | If `True`, requests chain-of-thought reasoning from the model and wraps it in `<think>` tags. |
+| `reasoning_effort` | `str` | `"medium"` | Effort level for reasoning models (`low`, `medium`, `high`). |
 
 **Validation on construction:**
 - `api_key` must be a non-empty string → raises `AuthenticationError`
@@ -94,14 +96,14 @@ The primary method for single-turn LLM completions.
 | `sys_message` | `str` | Yes | System instruction (role/persona) |
 | `images` | `list[str]` | No | List of image file paths or URLs for multimodal input |
 
-**Returns**: `str` — The LLM's response text. If `include_reasoning` is `True` and reasoning is available, the response includes `<reasoning>` tags followed by the content.
+**Returns**: `str` — The LLM's response text. If `include_reasoning` is `True` and reasoning is available, the response includes `<think>` tags followed by the content.
 
 **Response format with reasoning enabled:**
 
 ```
-<reasoning>
+<think>
 Step-by-step analysis of the query...
-</reasoning>
+</think>
 
 The final answer content here.
 ```
@@ -232,16 +234,16 @@ The `use_system_role` parameter controls how system instructions are delivered t
 When `include_reasoning` is `True`:
 
 1. The API request includes `"include_reasoning": true` in the payload
-2. If the model returns a `reasoning` field in its response, it is wrapped in `<reasoning>` tags and prepended to the content
+2. If the model returns a `reasoning` field in its response, it is wrapped in `<think>` tags and prepended to the content
 3. If no reasoning is returned, only the content is returned as normal
 
 **Response with reasoning:**
 
 ```
-<reasoning>
+<think>
 The user is asking about a specific employment situation involving contract termination.
 This falls under the Hong Kong Employment Ordinance, Chapter 57...
-</reasoning>
+</think>
 
 Based on the Employment Ordinance...
 ```

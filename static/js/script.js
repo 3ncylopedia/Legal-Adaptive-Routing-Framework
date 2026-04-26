@@ -980,6 +980,7 @@ async function loadConfig() {
         document.getElementById('cfg_triage_max_tokens').value = data.triage_max_tokens ?? 1000;
         document.getElementById('cfg_triage_use_system').checked = !!data.triage_use_system;
         // reasoning fixed false — hidden input already set
+        document.getElementById('cfg_triage_reasoning_effort').value = data.triage_reasoning_effort || 'medium';
         setInstructionValue('triage', data.triage_instructions || '');
 
         // Router
@@ -988,6 +989,7 @@ async function loadConfig() {
         document.getElementById('cfg_router_max_tokens').value = data.router_max_tokens ?? 1000;
         document.getElementById('cfg_router_use_system').checked = !!data.router_use_system;
         // reasoning fixed false — hidden input already set
+        document.getElementById('cfg_router_reasoning_effort').value = data.router_reasoning_effort || 'medium';
 
         // General
         document.getElementById('cfg_general_model').value = data.general_model || '';
@@ -995,6 +997,7 @@ async function loadConfig() {
         document.getElementById('cfg_general_max_tokens').value = data.general_max_tokens ?? 1000;
         document.getElementById('cfg_general_use_system').checked = !!data.general_use_system;
         document.getElementById('cfg_general_reasoning').checked = !!data.general_reasoning;
+        document.getElementById('cfg_general_reasoning_effort').value = data.general_reasoning_effort || 'medium';
         setInstructionValue('general', data.general_instructions || '');
 
         // Reasoning
@@ -1003,6 +1006,7 @@ async function loadConfig() {
         document.getElementById('cfg_reasoning_max_tokens').value = data.reasoning_max_tokens ?? 2000;
         document.getElementById('cfg_reasoning_use_system').checked = !!data.reasoning_use_system;
         document.getElementById('cfg_reasoning_reasoning').checked = !!data.reasoning_reasoning;
+        document.getElementById('cfg_reasoning_reasoning_effort').value = data.reasoning_reasoning_effort || 'medium';
         setInstructionValue('reasoning', data.reasoning_instructions || '');
 
         // Casual
@@ -1010,8 +1014,11 @@ async function loadConfig() {
         document.getElementById('cfg_casual_temp').value = data.casual_temp ?? 0;
         document.getElementById('cfg_casual_max_tokens').value = data.casual_max_tokens ?? 200;
         document.getElementById('cfg_casual_use_system').checked = !!data.casual_use_system;
-        document.getElementById('cfg_casual_reasoning').checked = !!data.casual_reasoning;
+        document.getElementById('cfg_casual_reasoning_effort').value = data.casual_reasoning_effort || 'medium';
         setInstructionValue('casual', data.casual_instructions || '');
+
+        // Initial visibility
+        updateEffortVisibility();
 
     } catch (e) {
         console.error('Failed to load config:', e);
@@ -1055,6 +1062,24 @@ function updateCharCount(module) {
     }
 });
 
+function updateEffortVisibility() {
+    ['general', 'reasoning', 'casual'].forEach(mod => {
+        const cb = document.getElementById(`cfg_${mod}_reasoning`);
+        const grp = document.getElementById(`grp_${mod}_reasoning_effort`);
+        if (cb && grp) {
+            grp.style.display = cb.checked ? 'block' : 'none';
+        }
+    });
+}
+
+// Attach listeners for effort visibility
+['general', 'reasoning', 'casual'].forEach(mod => {
+    const cb = document.getElementById(`cfg_${mod}_reasoning`);
+    if (cb) {
+        cb.addEventListener('change', updateEffortVisibility);
+    }
+});
+
 // Save Config
 DOM.saveConfigBtn.addEventListener('click', async () => {
     const payload = {
@@ -1065,6 +1090,7 @@ DOM.saveConfigBtn.addEventListener('click', async () => {
         triage_max_tokens: parseInt(document.getElementById('cfg_triage_max_tokens').value) || 1000,
         triage_use_system: document.getElementById('cfg_triage_use_system').checked,
         triage_reasoning: false, // Fixed OFF per QA requirement
+        triage_reasoning_effort: document.getElementById('cfg_triage_reasoning_effort').value,
         triage_instructions: document.getElementById('cfg_triage_instructions').value,
 
         router_model: document.getElementById('cfg_router_model').value,
@@ -1072,12 +1098,14 @@ DOM.saveConfigBtn.addEventListener('click', async () => {
         router_max_tokens: parseInt(document.getElementById('cfg_router_max_tokens').value) || 1000,
         router_use_system: document.getElementById('cfg_router_use_system').checked,
         router_reasoning: false, // Fixed OFF per QA requirement
+        router_reasoning_effort: document.getElementById('cfg_router_reasoning_effort').value,
 
         general_model: document.getElementById('cfg_general_model').value,
         general_temp: parseFloat(document.getElementById('cfg_general_temp').value) || 0,
         general_max_tokens: parseInt(document.getElementById('cfg_general_max_tokens').value) || 1000,
         general_use_system: document.getElementById('cfg_general_use_system').checked,
         general_reasoning: document.getElementById('cfg_general_reasoning').checked,
+        general_reasoning_effort: document.getElementById('cfg_general_reasoning_effort').value,
         general_instructions: document.getElementById('cfg_general_instructions').value,
 
         reasoning_model: document.getElementById('cfg_reasoning_model').value,
@@ -1085,6 +1113,7 @@ DOM.saveConfigBtn.addEventListener('click', async () => {
         reasoning_max_tokens: parseInt(document.getElementById('cfg_reasoning_max_tokens').value) || 2000,
         reasoning_use_system: document.getElementById('cfg_reasoning_use_system').checked,
         reasoning_reasoning: document.getElementById('cfg_reasoning_reasoning').checked,
+        reasoning_reasoning_effort: document.getElementById('cfg_reasoning_reasoning_effort').value,
         reasoning_instructions: document.getElementById('cfg_reasoning_instructions').value,
 
         casual_model: document.getElementById('cfg_casual_model').value,
@@ -1092,6 +1121,7 @@ DOM.saveConfigBtn.addEventListener('click', async () => {
         casual_max_tokens: parseInt(document.getElementById('cfg_casual_max_tokens').value) || 200,
         casual_use_system: document.getElementById('cfg_casual_use_system').checked,
         casual_reasoning: document.getElementById('cfg_casual_reasoning').checked,
+        casual_reasoning_effort: document.getElementById('cfg_casual_reasoning_effort').value,
         casual_instructions: document.getElementById('cfg_casual_instructions').value,
     };
 

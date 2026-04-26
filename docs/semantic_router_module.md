@@ -5,7 +5,9 @@
 > - `src/adaptive_routing/modules/semantic_router/logic_classifier.py`  
 > - `src/adaptive_routing/modules/semantic_router/legal_generation.py`
 
-The **Semantic Router Module** is the **second stage** of the Adaptive Routing pipeline. It takes normalized English text (output from the Triage Module) and performs two operations: **classifies** the query intent, then **generates** a legal response using the appropriate LLM engine.
+The **Semantic Router Module** is the **second stage** of the Adaptive Routing pipeline. It takes normalized English text (output from the Triage Module) and performs two operations:- **`RoutingClassifier`**: The "brain" that determines where to send a query.
+- **`utils/parser.py`**: Shared utility for cleaning and parsing structured JSON responses, including reasoning tag removal.
+- **`LegalGenerator`**: The "dispatcher" that manages multiple specialized LLM engines.
 
 ---
 
@@ -24,6 +26,7 @@ The **Semantic Router Module** is the **second stage** of the Adaptive Routing p
   - [Classification Output Schema](#classification-output-schema)
   - [Routing Logic](#routing-logic)
   - [Fail-Safe Behavior](#fail-safe-behavior)
+  - [Structured Response Parsing](#structured-response-parsing)
 - [LegalGenerator (Sub-component)](#legalgenerator-sub-component)
   - [Constructor](#legalgenerator-constructor)
   - [_dispatch_()](#_dispatch_)
@@ -316,13 +319,16 @@ If routing fails for **any reason** (API error, JSON parsing failure, or an empt
 - **Config Snapshot:** Includes current Model, `USE_SYSTEM`, and `REASONING` tokens directly in the error message log.
 - **Actionable Hints:** Suggests setting `ROUTER_USE_SYSTEM=True` or `ROUTER_REASONING=False` depending on the failure mode, or warns about rate limits for `:free` tier models.
 
-When `SemanticRouterModule` receives an error classification, it replies with a fallback technical apology instead of generating a response. If the LLM generates a route output omitting the primary routes, it returns an ambiguous clarification prompt.
+When `SemanticRouterModule` receives an error classification, it replies with a fallback technical apology instead of generating a response. If the LLM generates a route output omitting the primary routes,### Structured Response Parsing
 
-**JSON parsing robustness**: The `_parse_json_()` method strips markdown code blocks (` ```json ... ``` `) before parsing, handling cases where the LLM wraps its JSON output.
+The `RoutingClassifier` uses `parse_router_json()` (from `utils/parser.py`) to process the LLM's output. This utility performs the following stability steps:
 
----
+1.  **Reasoning Stripping**: Removes any `<think>...</think>` blocks if reasoning was enabled.
+2.  **Markdown Cleaning**: Removes ```json code fences.
+3.  **JSON Decoding**: Converts the cleaned string into a Python dictionary.
 
-## LegalGenerator (Sub-component)
+This multi-stage cleaning ensures that even models that produce extra "thought" text will not break the routing logic.
+(Sub-component)
 
 **Import**: `from src.adaptive_routing.modules.semantic_router.legal_generation import LegalGenerator`
 

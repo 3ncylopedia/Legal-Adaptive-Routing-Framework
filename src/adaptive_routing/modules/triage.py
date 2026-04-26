@@ -6,6 +6,7 @@
 ## @deps src.adaptive_routing.modules.multihead_classifier.linguistic, src.adaptive_routing.core.engine, logging
 
 from src.adaptive_routing.modules.multihead_classifier.linguistic import LinguisticNormalizer
+from src.adaptive_routing.modules.multihead_classifier.utils.cleaner import strip_llm_artifacts
 from src.adaptive_routing.core.engine import LLMRequestEngine
 from src.adaptive_routing.config import FrameworkConfig
 import re
@@ -28,7 +29,8 @@ class TriageModule:
             temperature=FrameworkConfig._TRIAGE_TEMP,
             max_tokens=FrameworkConfig._TRIAGE_MAX_TOKENS,
             use_system_role=FrameworkConfig._TRIAGE_USE_SYSTEM,
-            include_reasoning=FrameworkConfig._TRIAGE_REASONING
+            include_reasoning=FrameworkConfig._TRIAGE_REASONING,
+            reasoning_effort=FrameworkConfig._TRIAGE_REASONING_EFFORT
         )
         self._normalizer = normalizer or LinguisticNormalizer(self._engine)
 
@@ -43,20 +45,22 @@ class TriageModule:
         """
         raw_output = self._normalizer._normalize_text_(input_text, image_path)
         
-        ## @logic_ Strip common LLM artifacts before parsing
-        cleaned_output = self._strip_llm_artifacts_(raw_output)
+        ## @logic_ Strip common LLM artifacts (like <think> tags) using utility
+        cleaned_output = strip_llm_artifacts(raw_output)
         
         normalized_text = cleaned_output
         detected_language = "Unknown"
 
-        ## @logic_ Regex to find the language tag at the end of the string
-        match = re.search(r"<Detected Raw Language:\s*(.+?)>$", cleaned_output, re.IGNORECASE)
+        ## @logic_ Robust regex to find the language tag even if trailing characters exist
+        ## Look for the tag anywhere near the end, capturing the content inside brackets
+        match = re.search(r"<Detected Raw Language:\s*([^>]+)>", cleaned_output, re.IGNORECASE)
         if match:
             detected_language = match.group(1).strip()
+            # Clean up normalized text by removing the tag and everything after it
             normalized_text = cleaned_output[:match.start()].strip()
         else:
-            ## @logic_ Fallback: try alternate tag formats
-            alt_match = re.search(r"\[Detected (?:Raw )?Language:\s*(.+?)\]$", cleaned_output, re.IGNORECASE)
+            ## @logic_ Fallback: try alternate tag formats [Detected Language: ...]
+            alt_match = re.search(r"\[Detected (?:Raw )?Language:\s*([^\]]+)\]", cleaned_output, re.IGNORECASE)
             if alt_match:
                 detected_language = alt_match.group(1).strip()
                 normalized_text = cleaned_output[:alt_match.start()].strip()
@@ -68,17 +72,3 @@ class TriageModule:
             "detected_language": detected_language,
             "normalized_text": normalized_text
         }
-    
-    @staticmethod
-    def _strip_llm_artifacts_(text: str) -> str:
-        """
-        @func_ _strip_llm_artifacts_
-        @params text : (str) Raw LLM output.
-        @returns (str) Cleaned text with common LLM artifacts removed.
-        @desc_ Strips thinking tags, reasoning tags, and other common LLM output artifacts.
-        """
-        ## @logic_ Remove <think>...</think> blocks
-        text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
-        ## @logic_ Remove <reasoning>...</reasoning> blocks
-        text = re.sub(r'<reasoning>.*?</reasoning>', '', text, flags=re.DOTALL).strip()
-        return text

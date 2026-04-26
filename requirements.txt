@@ -6,3 +6,4 @@ numpy
 rich
 prompt_toolkit
 rank_bm25
+customtkinter

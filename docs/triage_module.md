@@ -144,7 +144,9 @@ The **main entry point** for all triage operations. Normalizes the input text an
 
 **Import**: `from src.adaptive_routing.modules.multihead_classifier.linguistic import LinguisticNormalizer`
 
-The AI-powered text normalization engine. Uses an LLM with a hardened system prompt to convert multilingual input into standardized legal English.
+- **`LinguisticNormalizer`**: The underlying AI engine that communicates with OpenRouter.
+- **`utils/cleaner.py`**: Shared utility for stripping reasoning blocks and formatting artifacts.
+Uses an LLM with a hardened system prompt to convert multilingual input into standardized legal English.
 
 ### LinguisticNormalizer Constructor
 
@@ -170,6 +172,15 @@ def _normalize_text_(self, raw_input: str, image_path: str = None) -> str
 | `image_path` | `str` | No | Path/URL to an image for multimodal processing |
 
 **Returns**: `str` — Normalized English text followed by a `<Detected Raw Language: ...>` tag.
+
+### 3. Cleaning & Parsing
+The raw output is passed through `strip_llm_artifacts()` (from `utils/cleaner.py`) to remove `<think>` blocks. Then, a robust regex is applied to extract the language tag:
+
+```python
+r"<Detected Raw Language:\s*([^>]+)>"
+```
+
+This improved regex is non-anchored, meaning it will correctly find the tag even if the LLM appends punctuation or extra newlines.
 
 **Example raw output:**
 

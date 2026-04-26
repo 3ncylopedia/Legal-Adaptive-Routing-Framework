@@ -10,6 +10,7 @@ import re
 import logging
 from src.adaptive_routing.core.engine import LLMRequestEngine
 from src.adaptive_routing.config import FrameworkConfig
+from src.adaptive_routing.modules.semantic_router.utils.parser import parse_router_json
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,8 @@ class RoutingClassifier:
             temperature=FrameworkConfig._ROUTER_TEMP,
             max_tokens=FrameworkConfig._ROUTER_MAX_TOKENS, 
             use_system_role=FrameworkConfig._ROUTER_USE_SYSTEM,
-            include_reasoning=FrameworkConfig._ROUTER_REASONING
+            include_reasoning=FrameworkConfig._ROUTER_REASONING,
+            reasoning_effort=FrameworkConfig._ROUTER_REASONING_EFFORT
         )
 
         self._system_prompt = system_prompt or FrameworkConfig._ROUTER_INSTRUCTIONS
@@ -60,7 +62,8 @@ class RoutingClassifier:
                     "error": error_msg
                 }
 
-            return self._parse_json_(raw_response)
+            ## @logic_ Delegate parsing to utility (handles <think> tags)
+            return parse_router_json(raw_response)
         except Exception as e:
             error_msg = f"Routing classification failed: {e}. {_cfg}"
             logger.error(error_msg)
@@ -68,33 +71,5 @@ class RoutingClassifier:
                 "route": None,
                 "confidence": 0.0,
                 "search_signals": ["Routing Error", str(e)],
-                "error": error_msg
-            }
-
-    def _parse_json_(self, text: str) -> dict:
-        """
-        @func_ _parse_json_
-        @params text : (str) Raw LLM output.
-        @returns (dict) Parsed JSON object.
-        @desc_ Removes markdown code blocks and whitespace before parsing.
-        """
-        if not isinstance(text, str):
-            text = str(text) if text is not None else ""
-            
-        ## @logic_ Strip markdown code blocks (```json ... ```)
-        cleaned_text = re.sub(r"```json\s*", "", text, flags=re.IGNORECASE)
-        cleaned_text = re.sub(r"```", "", cleaned_text)
-        cleaned_text = cleaned_text.strip()
-        
-        try:
-            return json.loads(cleaned_text)
-        except json.JSONDecodeError:
-            preview = repr(text[:200]) if text else "(empty)"
-            error_msg = f"Failed to parse router output as JSON. Raw output: {preview}"
-            logger.warning(error_msg)
-            return {
-                "route": None,
-                "confidence": 0.0,
-                "search_signals": ["JSON Parsing Failed"],
                 "error": error_msg
             }

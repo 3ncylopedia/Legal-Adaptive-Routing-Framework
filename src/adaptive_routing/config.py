@@ -31,6 +31,7 @@ class FrameworkConfig:
     _TRIAGE_MAX_TOKENS = int(os.getenv("TRIAGE_MAX_TOKENS", "2000"))
     _TRIAGE_USE_SYSTEM = os.getenv("TRIAGE_USE_SYSTEM", "True").lower() == "true"
     _TRIAGE_REASONING = os.getenv("TRIAGE_REASONING", "False").lower() == "true"
+    _TRIAGE_REASONING_EFFORT = os.getenv("TRIAGE_REASONING_EFFORT", "medium")
     _TRIAGE_INSTRUCTIONS = os.getenv("TRIAGE_INSTRUCTIONS", (
         "ROLE: Specialized Legal Linguistic Normalizer.\n"
         "TASK: Convert Cantonese/Chinese/Tagalog/Taglish/Chinglish input into standardized, objective English for a legal routing system.\n"
@@ -50,6 +51,7 @@ class FrameworkConfig:
     _ROUTER_MAX_TOKENS = int(os.getenv("ROUTER_MAX_TOKENS", "250"))
     _ROUTER_USE_SYSTEM = os.getenv("ROUTER_USE_SYSTEM", "TRUE").lower() == "true"
     _ROUTER_REASONING = os.getenv("ROUTER_REASONING", "False").lower() == "true"
+    _ROUTER_REASONING_EFFORT = os.getenv("ROUTER_REASONING_EFFORT", "medium")
 
     ## @const_ _FALLBACKS : Legacy/Default settings.
     _DEFAULT_MODEL = _TRIAGE_MODEL 
@@ -57,6 +59,7 @@ class FrameworkConfig:
     _MAX_TOKENS = 1500
     _USE_SYSTEM_ROLE = True
     _INCLUDE_REASONING = False
+    _REASONING_EFFORT = "medium"
 
     ## @const_ _NETWORK : Resilience and timeout settings.
     _REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "30"))
@@ -90,6 +93,7 @@ class FrameworkConfig:
     _GENERAL_MAX_TOKENS = int(os.getenv("GENERAL_MAX_TOKENS", "2500"))
     _GENERAL_USE_SYSTEM = os.getenv("GENERAL_USE_SYSTEM", "True").lower() == "true"
     _GENERAL_REASONING = os.getenv("GENERAL_REASONING", "False").lower() == "true"
+    _GENERAL_REASONING_EFFORT = os.getenv("GENERAL_REASONING_EFFORT", "medium")
     _GENERAL_INSTRUCTIONS = os.getenv("GENERAL_INSTRUCTIONS", (
         "ROLE: Legal Information Assistant\n"
         "PERSONA: You are Atty. Veritas AI, a legal information assistant from Saint Louis University. Your SOLE purpose is to assist Philippine Migrant Workers in Hong Kong with labor law concerns. Be highly empathetic; if the user's inquiry is emotional or expresses distress, you MUST provide active emotional support and a comforting tone before delivering legal information.\n"
@@ -123,6 +127,7 @@ class FrameworkConfig:
     _REASONING_MAX_TOKENS = int(os.getenv("REASONING_MAX_TOKENS", "4000"))
     _REASONING_USE_SYSTEM = os.getenv("REASONING_USE_SYSTEM", "True").lower() == "true"
     _REASONING_REASONING = os.getenv("REASONING_REASONING", "True").lower() == "true"
+    _REASONING_REASONING_EFFORT = os.getenv("REASONING_REASONING_EFFORT", "medium")
     _REASONING_INSTRUCTIONS = os.getenv("REASONING_INSTRUCTIONS", (
         "ROLE: Legal AI Assistant (Philippine & HK Labor Law Focus)\n\n"
         "PERSONA: You are Atty. Veritas AI, a legal information assistant from Saint Louis University. Your SOLE purpose is to assist Philippine Migrant Workers in Hong Kong with labor law scenarios. Be deeply empathetic; if the user's situation involves distress, abuse, or financial hardship, provide warm emotional support and reassurance first.\n\n"
@@ -204,6 +209,7 @@ class FrameworkConfig:
     _CASUAL_MAX_TOKENS = int(os.getenv("CASUAL_MAX_TOKENS", "200"))
     _CASUAL_USE_SYSTEM = os.getenv("CASUAL_USE_SYSTEM", "True").lower() == "true"
     _CASUAL_REASONING = os.getenv("CASUAL_REASONING", "False").lower() == "true"
+    _CASUAL_REASONING_EFFORT = os.getenv("CASUAL_REASONING_EFFORT", "medium")
     _CASUAL_INSTRUCTIONS = os.getenv("CASUAL_INSTRUCTIONS", (
         "ROLE: Friendly Legal Assistant Greeter\n"
         "PERSONA: You are Atty. Veritas AI, a warm and approachable legal information assistant from Saint Louis University. Your SOLE purpose is a friendly legal assistant for Migrant Workers Concerns.\n"

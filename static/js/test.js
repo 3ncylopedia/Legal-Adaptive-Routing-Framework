@@ -124,6 +124,12 @@ async function loadConfig() {
         if (maxTokensEl && cfg[maxTokensKey] !== undefined) {
             maxTokensEl.value = cfg[maxTokensKey];
         }
+        
+        const effortKey = `${MODULE}_reasoning_effort`;
+        const effortEl = document.getElementById(`${MODULE}-reasoning-effort`);
+        if (effortEl && cfg[effortKey]) {
+            effortEl.value = cfg[effortKey];
+        }
 
         // Show model in footer
         const modelKey = `${MODULE}_model`;
@@ -582,6 +588,7 @@ async function runLLM(moduleName) {
     // Hyperparameters
     const tempEl = document.getElementById(`${moduleName}-temp`);
     const maxTokensEl = document.getElementById(`${moduleName}-max-tokens`);
+    const effortEl = document.getElementById(`${moduleName}-reasoning-effort`);
 
     const userMessage = msgEl ? msgEl.value.trim() : '';
     if (!userMessage) { showToast('User message is required', 'error'); setRunning(false); stopTimer(); return; }
@@ -591,6 +598,7 @@ async function runLLM(moduleName) {
     
     const temperature = tempEl ? parseFloat(tempEl.value) : null;
     const maxTokens   = maxTokensEl ? parseInt(maxTokensEl.value) : null;
+    const reasoningEffort = effortEl ? effortEl.value : null;
 
     const area     = getOutputArea();
     const pipeline = createPipelineEl();
@@ -621,7 +629,8 @@ async function runLLM(moduleName) {
                 system_instructions: systemInstructions,
                 rag_context: ragContext,
                 temperature: temperature,
-                max_tokens: maxTokens
+                max_tokens: maxTokens,
+                reasoning_effort: reasoningEffort
             })
         });
 

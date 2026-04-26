@@ -72,7 +72,8 @@ Controls the **Linguistic Normalizer** — the LLM that translates Tagalog/Tagli
 | `_TRIAGE_TEMP` | `TRIAGE_TEMP` | `float` | `0.6` | Creativity level (0.0 = deterministic, 2.0 = max creative) |
 | `_TRIAGE_MAX_TOKENS` | `TRIAGE_MAX_TOKENS` | `int` | `2000` | Maximum response length in tokens |
 | `_TRIAGE_USE_SYSTEM` | `TRIAGE_USE_SYSTEM` | `bool` | `True` | Whether to use the `system` role in API requests |
-| `_TRIAGE_REASONING` | `TRIAGE_REASONING` | `bool` | `True` | Whether to include chain-of-thought reasoning |
+| `_TRIAGE_REASONING` | `TRIAGE_REASONING` | `bool` | `False` | Whether to include chain-of-thought reasoning |
+| `_TRIAGE_REASONING_EFFORT` | `TRIAGE_REASONING_EFFORT` | `str` | `"medium"` | Effort level for reasoning models (`low`, `medium`, `high`) |
 
 **Customization example:**
 
@@ -90,11 +91,12 @@ Controls the **RoutingClassifier** — the LLM that classifies queries into `Gen
 
 | Attribute | Env Variable | Type | Default | Description |
 |:---|:---|:---|:---|:---|
-| `_ROUTER_MODEL` | `ROUTER_MODEL` | `str` | `"google/gemma-3-12b-it:free"` | LLM model for route classification |
-| `_ROUTER_TEMP` | `ROUTER_TEMP` | `float` | `0.0` | Temperature (0.0 for deterministic routing) |
+| `_ROUTER_MODEL` | `ROUTER_MODEL` | `str` | `"qwen/qwen-turbo"` | LLM model for route classification |
+| `_ROUTER_TEMP` | `ROUTER_TEMP` | `float` | `0.1` | Temperature (0.0 for deterministic routing) |
 | `_ROUTER_MAX_TOKENS` | `ROUTER_MAX_TOKENS` | `int` | `200` | Max tokens (routing output is compact JSON) |
 | `_ROUTER_USE_SYSTEM` | `ROUTER_USE_SYSTEM` | `bool` | `False` | System role support |
 | `_ROUTER_REASONING` | `ROUTER_REASONING` | `bool` | `False` | Include reasoning in response |
+| `_ROUTER_REASONING_EFFORT` | `ROUTER_REASONING_EFFORT` | `str` | `"medium"` | Effort level for reasoning models |
 
 > **Tip**: Keep `_ROUTER_TEMP` at `0.0` for consistent, reproducible routing decisions.
 
@@ -106,15 +108,16 @@ Controls the **General-LLM** — used for standard legal information queries (de
 
 | Attribute | Env Variable | Type | Default | Description |
 |:---|:---|:---|:---|:---|
-| `_GENERAL_MODEL` | `GENERAL_MODEL` | `str` | `"qwen/qwen3-next-80b-a3b-instruct:free"` | LLM model for general responses |
-| `_GENERAL_TEMP` | `GENERAL_TEMP` | `float` | `0.5` | Temperature for response variety |
+| `_GENERAL_MODEL` | `GENERAL_MODEL` | `str` | `"google/gemma-4-26b-a4b-it"` | LLM model for general responses |
+| `_GENERAL_TEMP` | `GENERAL_TEMP` | `float` | `1.4` | Temperature for response variety |
 | `_GENERAL_MAX_TOKENS` | `GENERAL_MAX_TOKENS` | `int` | `2500` | Max response length |
 | `_GENERAL_USE_SYSTEM` | `GENERAL_USE_SYSTEM` | `bool` | `True` | System role support |
 | `_GENERAL_REASONING` | `GENERAL_REASONING` | `bool` | `False` | Include reasoning output |
+| `_GENERAL_REASONING_EFFORT` | `GENERAL_REASONING_EFFORT` | `str` | `"medium"` | Effort level for reasoning models |
 | `_GENERAL_INSTRUCTIONS` | — | `str` | *(see below)* | System prompt for the General-LLM |
 
 **Default `_GENERAL_INSTRUCTIONS` behavior:**
-- Persona: "Atty. Agapay AI" — a legal information assistant for OFWs
+- Persona: "Atty. Veritas AI" — a legal information assistant for OFWs
 - Output format: Query Overview → Relevant Legal Concepts → General Explanation → Summary
 - Constraints: No specific legal advice, distinguish PH/HK jurisdictions, simplified language
 
@@ -136,14 +139,15 @@ Controls the **Reasoning-LLM** — used for complex legal analysis, scenario-bas
 | Attribute | Env Variable | Type | Default | Description |
 |:---|:---|:---|:---|:---|
 | `_REASONING_MODEL` | `REASONING_MODEL` | `str` | `"deepseek/deepseek-chat-v3.1"` | LLM model for reasoning tasks |
-| `_REASONING_TEMP` | `REASONING_TEMP` | `float` | `0.7` | Higher temperature for nuanced analysis |
-| `_REASONING_MAX_TOKENS` | `REASONING_MAX_TOKENS` | `int` | `3000` | Extended token limit for detailed analysis |
+| `_REASONING_TEMP` | `REASONING_TEMP` | `float` | `1.0` | Higher temperature for nuanced analysis |
+| `_REASONING_MAX_TOKENS` | `REASONING_MAX_TOKENS` | `int` | `4000` | Extended token limit for detailed analysis |
 | `_REASONING_USE_SYSTEM` | `REASONING_USE_SYSTEM` | `bool` | `True` | System role support |
 | `_REASONING_REASONING` | `REASONING_REASONING` | `bool` | `True` | Include chain-of-thought reasoning |
+| `_REASONING_REASONING_EFFORT` | `REASONING_REASONING_EFFORT` | `str` | `"medium"` | Effort level for reasoning models |
 | `_REASONING_INSTRUCTIONS` | — | `str` | *(see below)* | System prompt for the Reasoning-LLM |
 
 **Default `_REASONING_INSTRUCTIONS` behavior:**
-- Persona: "Atty. Agapay AI" — legal assistant for OFWs
+- Persona: "Atty. Veritas AI" — legal assistant for OFWs
 - Output format: ALAC Standard — **Application → Law → Analysis → Conclusion**
 - Safety: "You are NOT a lawyer", no court outcome predictions, simplified language
 
@@ -160,10 +164,11 @@ Controls the **Casual-LLM** engine — used for greetings, expressions of gratit
 | `_CASUAL_MAX_TOKENS` | `CASUAL_MAX_TOKENS` | `int` | `200` | Short responses — 1–3 sentences max |
 | `_CASUAL_USE_SYSTEM` | `CASUAL_USE_SYSTEM` | `bool` | `True` | System role support |
 | `_CASUAL_REASONING` | `CASUAL_REASONING` | `bool` | `False` | Chain-of-thought disabled |
+| `_CASUAL_REASONING_EFFORT` | `CASUAL_REASONING_EFFORT` | `str` | `"medium"` | Effort level for reasoning models |
 | `_CASUAL_INSTRUCTIONS` | — | `str` | *(see below)* | Persona prompt for the Casual-LLM |
 
 **Default `_CASUAL_INSTRUCTIONS` behavior:**
-- Persona: "Atty. Agapay AI" — warm and approachable greeter
+- Persona: "Atty. Veritas AI" — warm and approachable greeter
 - Keeps responses to 1–3 sentences
 - Does NOT provide any legal information; redirects to ask how it can assist
 - May respond in the same language the user uses (English, Tagalog, etc.)
@@ -176,10 +181,10 @@ Controls the **EmbeddingManager** and **LegalRetriever** — the document embedd
 
 | Attribute | Env Variable | Type | Default | Description |
 |:---|:---|:---|:---|:---|
-| `_RETRIEVAL_MODEL` | `RETRIEVAL_MODEL` | `str` | `"sentence-transformers/all-minilm-l6-v2"` | Embedding model for vector generation |
+| `_RETRIEVAL_MODEL` | `RETRIEVAL_MODEL` | `str` | `"sentence-transformers/all-mpnet-base-v2"` | Embedding model for vector generation |
 | `_RETRIEVAL_TOP_K` | `RETRIEVAL_TOP_K` | `int` | `5` | Number of nearest chunks to retrieve |
 | `_RETRIEVAL_CHUNK_SIZE` | `RETRIEVAL_CHUNK_SIZE` | `int` | `5000` | Maximum characters per document chunk |
-| `_RETRIEVAL_CHUNK_OVERLAP` | `RETRIEVAL_CHUNK_OVERLAP` | `int` | `200` | Character overlap between adjacent chunks |
+| `_RETRIEVAL_CHUNK_OVERLAP` | `RETRIEVAL_CHUNK_OVERLAP` | `int` | `300` | Character overlap between adjacent chunks |
 | `_RETRIEVAL_SCORE_THRESHOLD` | `RETRIEVAL_SCORE_THRESHOLD` | `float` | `0.0` | Minimum cosine similarity score to include a chunk result |
 | `_RETRIEVAL_INDEX_PATH` | `RETRIEVAL_INDEX_PATH` | `str` | `None` | Path to a pre-built FAISS `.faiss` file |
 | `_RETRIEVAL_CHUNKS_PATH` | `RETRIEVAL_CHUNKS_PATH` | `str` | `None` | Path to a pre-built chunks `.json` file |

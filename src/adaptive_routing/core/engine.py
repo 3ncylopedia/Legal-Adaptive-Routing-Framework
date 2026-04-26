@@ -29,9 +29,9 @@ class LLMRequestEngine:
     @attr_ _temperature : (float) Controls randomness of output.
     @attr_ _max_tokens : (int) Limit on response length.
     @attr_ _use_system_role : (bool) Toggle for system prompt support.
-    @attr_ _include_reasoning : (bool) Toggle for reasoning field inclusion.
+    @attr_ _reasoning_effort : (str) The reasoning effort level (e.g., 'low', 'medium', 'high').
     """
-    def __init__(self, api_key=None, model=None, temperature=None, max_tokens=None, use_system_role=None, include_reasoning=None):
+    def __init__(self, api_key=None, model=None, temperature=None, max_tokens=None, use_system_role=None, include_reasoning=None, reasoning_effort=None):
         self._url = "https://openrouter.ai/api/v1/chat/completions"
         
         ## @logic_ Determine system role usage: Argument > Config > Default(True)
@@ -45,6 +45,11 @@ class LLMRequestEngine:
             self._include_reasoning = include_reasoning
         else:
             self._include_reasoning = getattr(FrameworkConfig, '_INCLUDE_REASONING', False)
+
+        if reasoning_effort is not None:
+            self._reasoning_effort = reasoning_effort
+        else:
+            self._reasoning_effort = getattr(FrameworkConfig, '_REASONING_EFFORT', "medium")
         
         ## @logic_ API Key Validation from argument or config
         self._api_key = api_key or FrameworkConfig._API_KEY
@@ -103,6 +108,8 @@ class LLMRequestEngine:
                     for part in details:
                         if isinstance(part, dict) and 'summary' in part:
                             parts.append(part['summary'])
+                        elif isinstance(part, dict) and 'text' in part:
+                            parts.append(part['text'])
                         elif isinstance(part, dict) and 'data' in part and not part.get('type') == 'reasoning.encrypted':
                              parts.append(part['data'])
                     if parts:
@@ -110,7 +117,7 @@ class LLMRequestEngine:
 
             # If user wants reasoning and we found some, prepend it
             if self._include_reasoning and reasoning:
-                return f"<reasoning>\n{reasoning}\n</reasoning>\n\n{content}"
+                return f"<think>\n{reasoning}\n</think>\n\n{content}"
             
             # Fallback if content is null but we have reasoning (indicates reasoning took all tokens)
             if not content and reasoning:
@@ -279,9 +286,14 @@ class LLMRequestEngine:
             "model": self._model,
             "messages": messages,
             "temperature": self._temperature,
-            "max_tokens": self._max_tokens,
-            "include_reasoning": self._include_reasoning
+            "max_tokens": self._max_tokens
         }
+        
+        if self._include_reasoning:
+            payload["reasoning"] = {
+                "enabled": True,
+                "effort": self._reasoning_effort
+            }
 
         response_json = self._call_api_(payload)
         return self._parse_response_(response_json)
@@ -316,9 +328,14 @@ class LLMRequestEngine:
             "model": self._model,
             "messages": final_messages,
             "temperature": self._temperature,
-            "max_tokens": self._max_tokens,
-            "include_reasoning": self._include_reasoning
+            "max_tokens": self._max_tokens
         }
+        
+        if self._include_reasoning:
+            payload["reasoning"] = {
+                "enabled": True,
+                "effort": self._reasoning_effort
+            }
 
         response_json = self._call_api_(payload)
         return self._parse_response_(response_json)

@@ -174,29 +174,34 @@ def _load_config_from_env_():
         "triage_max_tokens":    FrameworkConfig._TRIAGE_MAX_TOKENS,
         "triage_use_system":    FrameworkConfig._TRIAGE_USE_SYSTEM,
         "triage_reasoning":     FrameworkConfig._TRIAGE_REASONING,
+        "triage_reasoning_effort": FrameworkConfig._TRIAGE_REASONING_EFFORT,
         "triage_instructions":  FrameworkConfig._TRIAGE_INSTRUCTIONS,
         "router_model":         FrameworkConfig._ROUTER_MODEL,
         "router_temp":          FrameworkConfig._ROUTER_TEMP,
         "router_max_tokens":    FrameworkConfig._ROUTER_MAX_TOKENS,
         "router_use_system":    FrameworkConfig._ROUTER_USE_SYSTEM,
         "router_reasoning":     FrameworkConfig._ROUTER_REASONING,
+        "router_reasoning_effort": FrameworkConfig._ROUTER_REASONING_EFFORT,
         "general_model":        FrameworkConfig._GENERAL_MODEL,
         "general_temp":         FrameworkConfig._GENERAL_TEMP,
         "general_max_tokens":   FrameworkConfig._GENERAL_MAX_TOKENS,
         "general_use_system":   FrameworkConfig._GENERAL_USE_SYSTEM,
         "general_reasoning":    FrameworkConfig._GENERAL_REASONING,
+        "general_reasoning_effort": FrameworkConfig._GENERAL_REASONING_EFFORT,
         "general_instructions": FrameworkConfig._GENERAL_INSTRUCTIONS,
         "reasoning_model":      FrameworkConfig._REASONING_MODEL,
         "reasoning_temp":       FrameworkConfig._REASONING_TEMP,
         "reasoning_max_tokens": FrameworkConfig._REASONING_MAX_TOKENS,
         "reasoning_use_system": FrameworkConfig._REASONING_USE_SYSTEM,
         "reasoning_reasoning":  FrameworkConfig._REASONING_REASONING,
+        "reasoning_reasoning_effort": FrameworkConfig._REASONING_REASONING_EFFORT,
         "reasoning_instructions": FrameworkConfig._REASONING_INSTRUCTIONS,
         "casual_model":         FrameworkConfig._CASUAL_MODEL,
         "casual_temp":          FrameworkConfig._CASUAL_TEMP,
         "casual_max_tokens":    FrameworkConfig._CASUAL_MAX_TOKENS,
         "casual_use_system":    FrameworkConfig._CASUAL_USE_SYSTEM,
         "casual_reasoning":     FrameworkConfig._CASUAL_REASONING,
+        "casual_reasoning_effort": FrameworkConfig._CASUAL_REASONING_EFFORT,
         "casual_instructions":  FrameworkConfig._CASUAL_INSTRUCTIONS,
         "request_timeout":      FrameworkConfig._REQUEST_TIMEOUT,
         "retry_count":          FrameworkConfig._RETRY_COUNT,
@@ -211,6 +216,16 @@ def _edit_module_config_(name, cfg, prefix):
     cfg[f"{prefix}_max_tokens"] = _input_int_("Max Tokens", cfg[f"{prefix}_max_tokens"])
     cfg[f"{prefix}_use_system"] = _input_bool_("System Role", cfg[f"{prefix}_use_system"])
     cfg[f"{prefix}_reasoning"] = _input_bool_("Reasoning", cfg[f"{prefix}_reasoning"])
+    
+    efforts = ["none", "minimal", "low", "medium", "high", "xhigh"]
+    current_effort = cfg[f"{prefix}_reasoning_effort"]
+    console.print(f"  Reasoning Effort levels: {', '.join(efforts)}")
+    new_effort = console.input(f"  Effort (currently {current_effort}): ").strip().lower()
+    if new_effort in efforts:
+        cfg[f"{prefix}_reasoning_effort"] = new_effort
+    elif new_effort:
+        console.print(f"  [red]Invalid effort. Keeping {current_effort}.[/red]")
+        
     console.print(f"  [green]✓ {name} configuration updated.[/green]")
 
 def _import_config_file_(cfg):
@@ -229,11 +244,11 @@ def _import_config_file_(cfg):
         config_data = data.get("config", {})
         
         module_map = {
-            "triage": ["model", "temp", "max_tokens", "use_system", "reasoning", "instructions"],
-            "router": ["model", "temp", "max_tokens", "use_system", "reasoning"],
-            "general": ["model", "temp", "max_tokens", "use_system", "reasoning", "instructions"],
-            "reasoning": ["model", "temp", "max_tokens", "use_system", "reasoning", "instructions"],
-            "casual": ["model", "temp", "max_tokens", "use_system", "reasoning", "instructions"],
+            "triage": ["model", "temp", "max_tokens", "use_system", "reasoning", "reasoning_effort", "instructions"],
+            "router": ["model", "temp", "max_tokens", "use_system", "reasoning", "reasoning_effort"],
+            "general": ["model", "temp", "max_tokens", "use_system", "reasoning", "reasoning_effort", "instructions"],
+            "reasoning": ["model", "temp", "max_tokens", "use_system", "reasoning", "reasoning_effort", "instructions"],
+            "casual": ["model", "temp", "max_tokens", "use_system", "reasoning", "reasoning_effort", "instructions"],
         }
         
         updates = 0
@@ -280,12 +295,14 @@ def interactive_config():
         table.add_column("Model", style="cyan", width=30)
         table.add_column("Sys", width=8)
         table.add_column("Reas", width=8)
+        table.add_column("Effort", width=10)
 
         for i, (name, prefix) in enumerate(modules, 1):
             sys_status = _bool_str_(_config[f"{prefix}_use_system"])
             reas_status = _bool_str_(_config[f"{prefix}_reasoning"])
+            effort = _config[f"{prefix}_reasoning_effort"]
             model = _config[f"{prefix}_model"]
-            table.add_row(f"{i}.", name, model, sys_status, reas_status)
+            table.add_row(f"{i}.", name, model, sys_status, reas_status, effort)
             
         console.print(table)
         console.print()
@@ -362,6 +379,11 @@ def _apply_config_(cfg):
         request_timeout=cfg["request_timeout"],
         retry_count=cfg["retry_count"],
         retry_backoff=cfg["retry_backoff"],
+        triage_reasoning_effort=cfg["triage_reasoning_effort"],
+        router_reasoning_effort=cfg["router_reasoning_effort"],
+        general_reasoning_effort=cfg["general_reasoning_effort"],
+        reasoning_reasoning_effort=cfg["reasoning_reasoning_effort"],
+        casual_reasoning_effort=cfg["casual_reasoning_effort"],
     )
 
 def _save_config_to_env_(cfg):
@@ -400,6 +422,11 @@ def _save_config_to_env_(cfg):
         "REQUEST_TIMEOUT":      str(cfg["request_timeout"]),
         "RETRY_COUNT":          str(cfg["retry_count"]),
         "RETRY_BACKOFF":        str(cfg["retry_backoff"]),
+        "TRIAGE_REASONING_EFFORT": cfg["triage_reasoning_effort"],
+        "ROUTER_REASONING_EFFORT": cfg["router_reasoning_effort"],
+        "GENERAL_REASONING_EFFORT": cfg["general_reasoning_effort"],
+        "REASONING_REASONING_EFFORT": cfg["reasoning_reasoning_effort"],
+        "CASUAL_REASONING_EFFORT": cfg["casual_reasoning_effort"],
     }
     try:
         for key, value in env_map.items():
@@ -431,11 +458,11 @@ def print_active_config():
     table.add_column("Model", style="cyan")
     table.add_column("Settings", style="dim")
     
-    table.add_row("Triage:", FrameworkConfig._TRIAGE_MODEL, f"Sys: {_bool_str_(FrameworkConfig._TRIAGE_USE_SYSTEM)} Reas: {_bool_str_(FrameworkConfig._TRIAGE_REASONING)}")
-    table.add_row("Router:", FrameworkConfig._ROUTER_MODEL, f"Sys: {_bool_str_(FrameworkConfig._ROUTER_USE_SYSTEM)} Reas: {_bool_str_(FrameworkConfig._ROUTER_REASONING)}")
-    table.add_row("General:", FrameworkConfig._GENERAL_MODEL, f"Sys: {_bool_str_(FrameworkConfig._GENERAL_USE_SYSTEM)} Reas: {_bool_str_(FrameworkConfig._GENERAL_REASONING)}")
-    table.add_row("Reasoning:", FrameworkConfig._REASONING_MODEL, f"Sys: {_bool_str_(FrameworkConfig._REASONING_USE_SYSTEM)} Reas: {_bool_str_(FrameworkConfig._REASONING_REASONING)}")
-    table.add_row("Casual:", FrameworkConfig._CASUAL_MODEL, f"Sys: {_bool_str_(FrameworkConfig._CASUAL_USE_SYSTEM)} Reas: {_bool_str_(FrameworkConfig._CASUAL_REASONING)}")
+    table.add_row("Triage:", FrameworkConfig._TRIAGE_MODEL, f"Sys: {_bool_str_(FrameworkConfig._TRIAGE_USE_SYSTEM)} Reas: {_bool_str_(FrameworkConfig._TRIAGE_REASONING)} Eff: {FrameworkConfig._TRIAGE_REASONING_EFFORT}")
+    table.add_row("Router:", FrameworkConfig._ROUTER_MODEL, f"Sys: {_bool_str_(FrameworkConfig._ROUTER_USE_SYSTEM)} Reas: {_bool_str_(FrameworkConfig._ROUTER_REASONING)} Eff: {FrameworkConfig._ROUTER_REASONING_EFFORT}")
+    table.add_row("General:", FrameworkConfig._GENERAL_MODEL, f"Sys: {_bool_str_(FrameworkConfig._GENERAL_USE_SYSTEM)} Reas: {_bool_str_(FrameworkConfig._GENERAL_REASONING)} Eff: {FrameworkConfig._GENERAL_REASONING_EFFORT}")
+    table.add_row("Reasoning:", FrameworkConfig._REASONING_MODEL, f"Sys: {_bool_str_(FrameworkConfig._REASONING_USE_SYSTEM)} Reas: {_bool_str_(FrameworkConfig._REASONING_REASONING)} Eff: {FrameworkConfig._REASONING_REASONING_EFFORT}")
+    table.add_row("Casual:", FrameworkConfig._CASUAL_MODEL, f"Sys: {_bool_str_(FrameworkConfig._CASUAL_USE_SYSTEM)} Reas: {_bool_str_(FrameworkConfig._CASUAL_REASONING)} Eff: {FrameworkConfig._CASUAL_REASONING_EFFORT}")
     console.print(table)
     console.print()
 

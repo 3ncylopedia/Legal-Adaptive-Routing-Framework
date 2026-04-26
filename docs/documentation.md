@@ -119,6 +119,7 @@ User Input (any language)
 │  • General-LLM → Info format             │
 │  • Reasoning-LLM → ALAC format           │
 │  Output: Grounded legal response         │
+│  (Persona: Atty. Veritas AI)             │
 └──────────────────────────────────────────┘
 ```
 
@@ -201,13 +202,17 @@ src/
         ├── triage.py                        # TriageModule (Orchestrator)
         ├── multihead_classifier/            # Triage sub-components
         │   ├── linguistic.py                #   LinguisticNormalizer
-        │   └── detector.py                  #   LanguageStateDetector
+        │   ├── detector.py                  #   LanguageStateDetector
+        │   └── utils/                       #   Triage Utilities
+        │       └── cleaner.py               #     Artifact stripping
         │                                    #   → docs/triage_module.md
         │
         ├── router.py                        # SemanticRouterModule (Orchestrator)
         ├── semantic_router/                 # Router sub-components
         │   ├── logic_classifier.py          #   RoutingClassifier
-        │   └── legal_generation.py          #   LegalGenerator
+        │   ├── legal_generation.py          #   LegalGenerator
+        │   └── utils/                       #   Router Utilities
+        │       └── parser.py                #     JSON stability parsing
         │                                    #   → docs/semantic_router_module.md
         │
         ├── retrieval.py                     # LegalRetrievalModule (Orchestrator)
@@ -264,16 +269,16 @@ from src.adaptive_routing import (
 | `ROUTER_MODEL` | Router | `qwen/qwen-turbo` | Classification LLM |
 | `ROUTER_TEMP` | Router | `0.1` | Temperature |
 | `ROUTER_MAX_TOKENS` | Router | `250` | Max tokens |
-| `GENERAL_MODEL` | Generation | `qwen/qwen3-next-80b-a3b-instruct:free` | General info LLM |
-| `GENERAL_TEMP` | Generation | `0.5` | Temperature |
+| `GENERAL_MODEL` | Generation | `google/gemma-4-26b-a4b-it` | General info LLM |
+| `GENERAL_TEMP` | Generation | `1.4` | Temperature |
 | `GENERAL_MAX_TOKENS` | Generation | `2500` | Max tokens |
 | `REASONING_MODEL` | Generation | `deepseek/deepseek-chat-v3.1` | Reasoning LLM |
-| `REASONING_TEMP` | Generation | `0.7` | Temperature |
-| `REASONING_MAX_TOKENS` | Generation | `3000` | Max tokens |
+| `REASONING_TEMP` | Generation | `1.0` | Temperature |
+| `REASONING_MAX_TOKENS` | Generation | `4000` | Max tokens |
 | `CASUAL_MODEL` | Generation | `qwen/qwen-turbo` | Casual / small-talk LLM |
 | `CASUAL_TEMP` | Generation | `0.8` | Temperature |
 | `CASUAL_MAX_TOKENS` | Generation | `200` | Max tokens |
-| `RETRIEVAL_MODEL` | RAG | `sentence-transformers/all-minilm-l6-v2` | Embedding model |
+| `RETRIEVAL_MODEL` | RAG | `sentence-transformers/all-mpnet-base-v2` | Embedding model |
 | `RETRIEVAL_TOP_K` | RAG | `5` | Chunks to retrieve |
 | `RETRIEVAL_CHUNK_SIZE` | RAG | `5000` | Characters per chunk |
 | `RETRIEVAL_INDEX_PATH` | RAG | `None` | Pre-built FAISS index path |

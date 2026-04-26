@@ -28,7 +28,8 @@ class LegalGenerator:
             temperature=FrameworkConfig._GENERAL_TEMP,
             max_tokens=FrameworkConfig._GENERAL_MAX_TOKENS,
             use_system_role=FrameworkConfig._GENERAL_USE_SYSTEM,
-            include_reasoning=FrameworkConfig._GENERAL_REASONING
+            include_reasoning=FrameworkConfig._GENERAL_REASONING,
+            reasoning_effort=FrameworkConfig._GENERAL_REASONING_EFFORT
         )
 
         self._reasoning_engine = reasoning_engine or LLMRequestEngine(
@@ -37,7 +38,8 @@ class LegalGenerator:
             temperature=FrameworkConfig._REASONING_TEMP,
             max_tokens=FrameworkConfig._REASONING_MAX_TOKENS,
             use_system_role=FrameworkConfig._REASONING_USE_SYSTEM,
-            include_reasoning=FrameworkConfig._REASONING_REASONING
+            include_reasoning=FrameworkConfig._REASONING_REASONING,
+            reasoning_effort=FrameworkConfig._REASONING_REASONING_EFFORT
         )
 
         self._casual_engine = casual_engine or LLMRequestEngine(
@@ -46,7 +48,8 @@ class LegalGenerator:
             temperature=FrameworkConfig._CASUAL_TEMP,
             max_tokens=FrameworkConfig._CASUAL_MAX_TOKENS,
             use_system_role=FrameworkConfig._CASUAL_USE_SYSTEM,
-            include_reasoning=FrameworkConfig._CASUAL_REASONING
+            include_reasoning=FrameworkConfig._CASUAL_REASONING,
+            reasoning_effort=FrameworkConfig._CASUAL_REASONING_EFFORT
         )
 
     def _build_messages_with_system_(self, messages: list, system_prompt: str) -> list:

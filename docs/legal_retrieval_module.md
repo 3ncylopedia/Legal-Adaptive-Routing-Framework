@@ -26,6 +26,7 @@ The **Legal Retrieval Module** implements the **Retrieval-Augmented Generation (
   - [_chunk_text_()](#_chunk_text_)
   - [_get_embeddings_()](#_get_embeddings_)
   - [_add_documents_()](#_add_documents_)
+  - [_init_bm25_()](#_init_bm25_)
   - [_search_()](#_search_)
   - [_save_index_() / _load_index_()](#embeddingmanager-save--load)
 - [LegalRetriever (Sub-component)](#legalretriever-sub-component)
@@ -110,9 +111,9 @@ LegalRetrievalModule(
 
 | Parameter | Config Source | Default Value |
 |:---|:---|:---|
-| Model | `_RETRIEVAL_MODEL` | `"sentence-transformers/all-minilm-l6-v2"` |
-| Chunk Size | `_RETRIEVAL_CHUNK_SIZE` | `15000` characters |
-| Chunk Overlap | `_RETRIEVAL_CHUNK_OVERLAP` | `0` characters |
+| Model | _RETRIEVAL_MODEL | "sentence-transformers/all-mpnet-base-v2" |
+| Chunk Size | _RETRIEVAL_CHUNK_SIZE | 5000 characters |
+| Chunk Overlap | _RETRIEVAL_CHUNK_OVERLAP | 300 characters |
 | Top K | `_RETRIEVAL_TOP_K` | `5` results |
 
 **Basic instantiation:**
@@ -398,7 +399,17 @@ Chunks each document (or bypasses chunking), generates embeddings, and adds them
 
 ---
 
-### `_search_()`
+#### `_init_bm25_()`
+
+```python
+def _init_bm25_(self)
+```
+
+Initializes the BM25 model for hybrid search. This is called automatically after documents are added or the index is loaded.
+
+---
+
+#### `_search_()`
 
 ```python
 def _search_(self, query: str, top_k: int = None) -> list[dict]

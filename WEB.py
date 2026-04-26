@@ -474,6 +474,7 @@ def get_config():
         "triage_max_tokens": FrameworkConfig._TRIAGE_MAX_TOKENS,
         "triage_use_system": FrameworkConfig._TRIAGE_USE_SYSTEM,
         "triage_reasoning": FrameworkConfig._TRIAGE_REASONING,
+        "triage_reasoning_effort": FrameworkConfig._TRIAGE_REASONING_EFFORT,
         "triage_instructions": FrameworkConfig._TRIAGE_INSTRUCTIONS,
         
         "router_model": FrameworkConfig._ROUTER_MODEL,
@@ -487,6 +488,7 @@ def get_config():
         "general_max_tokens": FrameworkConfig._GENERAL_MAX_TOKENS,
         "general_use_system": FrameworkConfig._GENERAL_USE_SYSTEM,
         "general_reasoning": FrameworkConfig._GENERAL_REASONING,
+        "general_reasoning_effort": FrameworkConfig._GENERAL_REASONING_EFFORT,
         "general_instructions": FrameworkConfig._GENERAL_INSTRUCTIONS,
         
         "reasoning_model": FrameworkConfig._REASONING_MODEL,
@@ -494,6 +496,7 @@ def get_config():
         "reasoning_max_tokens": FrameworkConfig._REASONING_MAX_TOKENS,
         "reasoning_use_system": FrameworkConfig._REASONING_USE_SYSTEM,
         "reasoning_reasoning": FrameworkConfig._REASONING_REASONING,
+        "reasoning_reasoning_effort": FrameworkConfig._REASONING_REASONING_EFFORT,
         "reasoning_instructions": FrameworkConfig._REASONING_INSTRUCTIONS,
         
         "casual_model": FrameworkConfig._CASUAL_MODEL,
@@ -501,6 +504,7 @@ def get_config():
         "casual_max_tokens": FrameworkConfig._CASUAL_MAX_TOKENS,
         "casual_use_system": FrameworkConfig._CASUAL_USE_SYSTEM,
         "casual_reasoning": FrameworkConfig._CASUAL_REASONING,
+        "casual_reasoning_effort": FrameworkConfig._CASUAL_REASONING_EFFORT,
         "casual_instructions": FrameworkConfig._CASUAL_INSTRUCTIONS,
     })
 
@@ -519,6 +523,7 @@ def save_config():
             triage_max_tokens=int(data.get('triage_max_tokens', FrameworkConfig._TRIAGE_MAX_TOKENS)),
             triage_use_system=data.get('triage_use_system', FrameworkConfig._TRIAGE_USE_SYSTEM),
             triage_reasoning=data.get('triage_reasoning', FrameworkConfig._TRIAGE_REASONING),
+            triage_reasoning_effort=data.get('triage_reasoning_effort', FrameworkConfig._TRIAGE_REASONING_EFFORT),
             triage_instructions=data.get('triage_instructions', FrameworkConfig._TRIAGE_INSTRUCTIONS),
             
             router_model=data.get('router_model', FrameworkConfig._ROUTER_MODEL),
@@ -526,12 +531,14 @@ def save_config():
             router_max_tokens=int(data.get('router_max_tokens', FrameworkConfig._ROUTER_MAX_TOKENS)),
             router_use_system=data.get('router_use_system', FrameworkConfig._ROUTER_USE_SYSTEM),
             router_reasoning=data.get('router_reasoning', FrameworkConfig._ROUTER_REASONING),
+            router_reasoning_effort=data.get('router_reasoning_effort', FrameworkConfig._ROUTER_REASONING_EFFORT),
             
             general_model=data.get('general_model', FrameworkConfig._GENERAL_MODEL),
             general_temp=float(data.get('general_temp', FrameworkConfig._GENERAL_TEMP)),
             general_max_tokens=int(data.get('general_max_tokens', FrameworkConfig._GENERAL_MAX_TOKENS)),
             general_use_system=data.get('general_use_system', FrameworkConfig._GENERAL_USE_SYSTEM),
             general_reasoning=data.get('general_reasoning', FrameworkConfig._GENERAL_REASONING),
+            general_reasoning_effort=data.get('general_reasoning_effort', FrameworkConfig._GENERAL_REASONING_EFFORT),
             general_instructions=data.get('general_instructions', FrameworkConfig._GENERAL_INSTRUCTIONS),
             
             reasoning_model=data.get('reasoning_model', FrameworkConfig._REASONING_MODEL),
@@ -539,6 +546,7 @@ def save_config():
             reasoning_max_tokens=int(data.get('reasoning_max_tokens', FrameworkConfig._REASONING_MAX_TOKENS)),
             reasoning_use_system=data.get('reasoning_use_system', FrameworkConfig._REASONING_USE_SYSTEM),
             reasoning_reasoning=data.get('reasoning_reasoning', FrameworkConfig._REASONING_REASONING),
+            reasoning_reasoning_effort=data.get('reasoning_reasoning_effort', FrameworkConfig._REASONING_REASONING_EFFORT),
             reasoning_instructions=data.get('reasoning_instructions', FrameworkConfig._REASONING_INSTRUCTIONS),
             
             casual_model=data.get('casual_model', FrameworkConfig._CASUAL_MODEL),
@@ -546,6 +554,7 @@ def save_config():
             casual_max_tokens=int(data.get('casual_max_tokens', FrameworkConfig._CASUAL_MAX_TOKENS)),
             casual_use_system=data.get('casual_use_system', FrameworkConfig._CASUAL_USE_SYSTEM),
             casual_reasoning=data.get('casual_reasoning', FrameworkConfig._CASUAL_REASONING),
+            casual_reasoning_effort=data.get('casual_reasoning_effort', FrameworkConfig._CASUAL_REASONING_EFFORT),
             casual_instructions=data.get('casual_instructions', FrameworkConfig._CASUAL_INSTRUCTIONS),
         )
         
@@ -560,6 +569,7 @@ def save_config():
         set_key(env_file, "TRIAGE_MAX_TOKENS", str(FrameworkConfig._TRIAGE_MAX_TOKENS))
         set_key(env_file, "TRIAGE_USE_SYSTEM", str(FrameworkConfig._TRIAGE_USE_SYSTEM))
         set_key(env_file, "TRIAGE_REASONING", str(FrameworkConfig._TRIAGE_REASONING))
+        set_key(env_file, "TRIAGE_REASONING_EFFORT", FrameworkConfig._TRIAGE_REASONING_EFFORT)
         set_key(env_file, "TRIAGE_INSTRUCTIONS", FrameworkConfig._TRIAGE_INSTRUCTIONS)
         
         set_key(env_file, "ROUTER_MODEL", FrameworkConfig._ROUTER_MODEL)
@@ -567,12 +577,14 @@ def save_config():
         set_key(env_file, "ROUTER_MAX_TOKENS", str(FrameworkConfig._ROUTER_MAX_TOKENS))
         set_key(env_file, "ROUTER_USE_SYSTEM", str(FrameworkConfig._ROUTER_USE_SYSTEM))
         set_key(env_file, "ROUTER_REASONING", str(FrameworkConfig._ROUTER_REASONING))
+        set_key(env_file, "ROUTER_REASONING_EFFORT", FrameworkConfig._ROUTER_REASONING_EFFORT)
         
         set_key(env_file, "GENERAL_MODEL", FrameworkConfig._GENERAL_MODEL)
         set_key(env_file, "GENERAL_TEMP", str(FrameworkConfig._GENERAL_TEMP))
         set_key(env_file, "GENERAL_MAX_TOKENS", str(FrameworkConfig._GENERAL_MAX_TOKENS))
         set_key(env_file, "GENERAL_USE_SYSTEM", str(FrameworkConfig._GENERAL_USE_SYSTEM))
         set_key(env_file, "GENERAL_REASONING", str(FrameworkConfig._GENERAL_REASONING))
+        set_key(env_file, "GENERAL_REASONING_EFFORT", FrameworkConfig._GENERAL_REASONING_EFFORT)
         set_key(env_file, "GENERAL_INSTRUCTIONS", FrameworkConfig._GENERAL_INSTRUCTIONS)
         
         set_key(env_file, "REASONING_MODEL", FrameworkConfig._REASONING_MODEL)
@@ -580,6 +592,7 @@ def save_config():
         set_key(env_file, "REASONING_MAX_TOKENS", str(FrameworkConfig._REASONING_MAX_TOKENS))
         set_key(env_file, "REASONING_USE_SYSTEM", str(FrameworkConfig._REASONING_USE_SYSTEM))
         set_key(env_file, "REASONING_REASONING", str(FrameworkConfig._REASONING_REASONING))
+        set_key(env_file, "REASONING_REASONING_EFFORT", FrameworkConfig._REASONING_REASONING_EFFORT)
         set_key(env_file, "REASONING_INSTRUCTIONS", FrameworkConfig._REASONING_INSTRUCTIONS)
         
         set_key(env_file, "CASUAL_MODEL", FrameworkConfig._CASUAL_MODEL)
@@ -587,6 +600,7 @@ def save_config():
         set_key(env_file, "CASUAL_MAX_TOKENS", str(FrameworkConfig._CASUAL_MAX_TOKENS))
         set_key(env_file, "CASUAL_USE_SYSTEM", str(FrameworkConfig._CASUAL_USE_SYSTEM))
         set_key(env_file, "CASUAL_REASONING", str(FrameworkConfig._CASUAL_REASONING))
+        set_key(env_file, "CASUAL_REASONING_EFFORT", FrameworkConfig._CASUAL_REASONING_EFFORT)
         set_key(env_file, "CASUAL_INSTRUCTIONS", FrameworkConfig._CASUAL_INSTRUCTIONS)
         
         # Re-initialize modules to pick up changes immediately
@@ -623,6 +637,7 @@ def export_config():
                 "max_tokens": FrameworkConfig._TRIAGE_MAX_TOKENS,
                 "use_system": FrameworkConfig._TRIAGE_USE_SYSTEM,
                 "reasoning": FrameworkConfig._TRIAGE_REASONING,
+                "reasoning_effort": FrameworkConfig._TRIAGE_REASONING_EFFORT,
                 "instructions": FrameworkConfig._TRIAGE_INSTRUCTIONS,
             },
             "router": {
@@ -631,6 +646,7 @@ def export_config():
                 "max_tokens": FrameworkConfig._ROUTER_MAX_TOKENS,
                 "use_system": FrameworkConfig._ROUTER_USE_SYSTEM,
                 "reasoning": FrameworkConfig._ROUTER_REASONING,
+                "reasoning_effort": FrameworkConfig._ROUTER_REASONING_EFFORT,
             },
             "general": {
                 "model": FrameworkConfig._GENERAL_MODEL,
@@ -638,6 +654,7 @@ def export_config():
                 "max_tokens": FrameworkConfig._GENERAL_MAX_TOKENS,
                 "use_system": FrameworkConfig._GENERAL_USE_SYSTEM,
                 "reasoning": FrameworkConfig._GENERAL_REASONING,
+                "reasoning_effort": FrameworkConfig._GENERAL_REASONING_EFFORT,
                 "instructions": FrameworkConfig._GENERAL_INSTRUCTIONS,
             },
             "reasoning": {
@@ -646,6 +663,7 @@ def export_config():
                 "max_tokens": FrameworkConfig._REASONING_MAX_TOKENS,
                 "use_system": FrameworkConfig._REASONING_USE_SYSTEM,
                 "reasoning": FrameworkConfig._REASONING_REASONING,
+                "reasoning_effort": FrameworkConfig._REASONING_REASONING_EFFORT,
                 "instructions": FrameworkConfig._REASONING_INSTRUCTIONS,
             },
             "casual": {
@@ -654,6 +672,7 @@ def export_config():
                 "max_tokens": FrameworkConfig._CASUAL_MAX_TOKENS,
                 "use_system": FrameworkConfig._CASUAL_USE_SYSTEM,
                 "reasoning": FrameworkConfig._CASUAL_REASONING,
+                "reasoning_effort": FrameworkConfig._CASUAL_REASONING_EFFORT,
                 "instructions": FrameworkConfig._CASUAL_INSTRUCTIONS,
             }
         }
@@ -839,7 +858,7 @@ def api_test_retrieval():
         return jsonify({"error": str(e)}), 500
 
 
-def _stream_llm_test(module_name, system_instructions, user_message, rag_context=None, temperature=None, max_tokens=None):
+def _stream_llm_test(module_name, system_instructions, user_message, rag_context=None, temperature=None, max_tokens=None, reasoning_effort=None):
     """
     Shared generator for LLM module test streaming.
     Temporarily overrides FrameworkConfig instructions, creates a fresh
@@ -880,7 +899,8 @@ def _stream_llm_test(module_name, system_instructions, user_message, rag_context
             temperature=float(temperature) if temperature is not None else getattr(FrameworkConfig, f"_{prefix}_TEMP"),
             max_tokens=int(max_tokens) if max_tokens is not None else getattr(FrameworkConfig, f"_{prefix}_MAX_TOKENS"),
             use_system_role=getattr(FrameworkConfig, f"_{prefix}_USE_SYSTEM"),
-            include_reasoning=getattr(FrameworkConfig, f"_{prefix}_REASONING")
+            include_reasoning=getattr(FrameworkConfig, f"_{prefix}_REASONING"),
+            reasoning_effort=reasoning_effort if reasoning_effort is not None else getattr(FrameworkConfig, f"_{prefix}_REASONING_EFFORT", "medium")
         )
 
         # 2. Use the system instructions provided in the test UI, or fall back to config
@@ -929,12 +949,13 @@ def api_test_general():
     rag_context = data.get('rag_context', None)
     temperature = data.get('temperature', None)
     max_tokens = data.get('max_tokens', None)
+    reasoning_effort = data.get('reasoning_effort', None)
     
     if not user_message:
         return Response(json.dumps({"type": "error", "content": "user_message is required"}) + "\n",
                         mimetype='application/x-ndjson', status=400)
     return Response(
-        stream_with_context(_stream_llm_test("general", system_instructions, user_message, rag_context, temperature, max_tokens)),
+        stream_with_context(_stream_llm_test("general", system_instructions, user_message, rag_context, temperature, max_tokens, reasoning_effort)),
         mimetype='application/x-ndjson'
     )
 
@@ -948,12 +969,13 @@ def api_test_reasoning():
     rag_context = data.get('rag_context', None)
     temperature = data.get('temperature', None)
     max_tokens = data.get('max_tokens', None)
+    reasoning_effort = data.get('reasoning_effort', None)
 
     if not user_message:
         return Response(json.dumps({"type": "error", "content": "user_message is required"}) + "\n",
                         mimetype='application/x-ndjson', status=400)
     return Response(
-        stream_with_context(_stream_llm_test("reasoning", system_instructions, user_message, rag_context, temperature, max_tokens)),
+        stream_with_context(_stream_llm_test("reasoning", system_instructions, user_message, rag_context, temperature, max_tokens, reasoning_effort)),
         mimetype='application/x-ndjson'
     )
 
@@ -966,12 +988,13 @@ def api_test_casual():
     system_instructions = data.get('system_instructions', None)
     temperature = data.get('temperature', None)
     max_tokens = data.get('max_tokens', None)
+    reasoning_effort = data.get('reasoning_effort', None)
 
     if not user_message:
         return Response(json.dumps({"type": "error", "content": "user_message is required"}) + "\n",
                         mimetype='application/x-ndjson', status=400)
     return Response(
-        stream_with_context(_stream_llm_test("casual", system_instructions, user_message, None, temperature, max_tokens)),
+        stream_with_context(_stream_llm_test("casual", system_instructions, user_message, None, temperature, max_tokens, reasoning_effort)),
         mimetype='application/x-ndjson'
     )
 
